@@ -689,6 +689,48 @@ app.get('/:page.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', `${req.params.page}.html`));
 });
 
+// Parent: Get student report by ID and Name
+app.get('/api/parent/student-report', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'parent') {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    
+    const { student_id, student_name, term, academic_year } = req.query;
+    
+    try {
+        // Find student by ID and name
+        const studentResult = await pool.query(
+            'SELECT * FROM students WHERE student_id = $1 AND LOWER(name) = LOWER($2)',
+            [student_id, student_name]
+        );
+        
+        if (studentResult.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Student not found. Please check Student ID and Name.' });
+        }
+        
+        const student = studentResult.rows[0];
+        
+        // Get subjects for this class
+        const subjectsRes = await pool.query('SELECT * FROM subjects WHERE class_level = $1', [student.class_level]);
+        
+        // Get SBA marks
+        const sbaResult = await pool.query(
+            'SELECT * FROM sba_marks WHERE student_id = $1 AND term = $2 AND academic_year = $3',
+            [student.id, term, academic_year]
+        );
+        
+        res.json({
+            success: true,
+            student,
+            subjects: subjectsRes.rows,
+            sbaMarks: sbaResult.rows
+        });
+    } catch (error) {
+        console.error('Error fetching student report:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ==================== START SERVER ====================
 app.listen(PORT, () => {
     console.log(`
