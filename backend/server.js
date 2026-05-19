@@ -522,6 +522,11 @@ app.delete('/api/students/:id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+// At the very end of server.js
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
 // ==================== START SERVER ====================
 app.listen(PORT, () => {
     console.log(`
