@@ -120,6 +120,50 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+// Get teacher's subjects
+app.get('/api/teacher/subjects', async (req, res) => {
+    const { class_level } = req.query;
+    console.log('Fetching subjects for class:', class_level);
+    
+    try {
+        let query = 'SELECT * FROM subjects WHERE 1=1';
+        let params = [];
+        
+        if (class_level === 'KG1' || class_level === 'KG2') {
+            query += ' AND class_level IN ($1, $2) ORDER BY display_order';
+            params = ['KG1', 'KG2'];
+        } else if (class_level === 'P1' || class_level === 'P2' || class_level === 'P3') {
+            query += ' AND class_level = $1 ORDER BY display_order';
+            params = ['P1-3'];
+        } else if (class_level === 'P4' || class_level === 'P5' || class_level === 'P6') {
+            query += ' AND class_level = $1 ORDER BY display_order';
+            params = ['P4-6'];
+        } else {
+            query += ' AND class_level = $1 ORDER BY display_order';
+            params = [class_level];
+        }
+        
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Subjects error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get teacher's students
+app.get('/api/teacher/students', async (req, res) => {
+    const { class_level } = req.query;
+    console.log('Fetching students for class:', class_level);
+    
+    try {
+        const result = await pool.query('SELECT * FROM students WHERE class_level = $1 ORDER BY name', [class_level]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ==================== SERVE FRONTEND ====================
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
