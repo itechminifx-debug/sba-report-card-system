@@ -499,6 +499,41 @@ app.get('/:page.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', `${req.params.page}.html`));
 });
 
+// ==================== SETTINGS API ====================
+
+// Get all settings
+app.get('/api/settings', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT setting_key, setting_value FROM school_settings');
+        const settings = {};
+        result.rows.forEach(row => {
+            settings[row.setting_key] = row.setting_value;
+        });
+        res.json(settings);
+    } catch (error) {
+        console.error('Error fetching settings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Update settings
+app.post('/api/settings', async (req, res) => {
+    const settings = req.body;
+    
+    try {
+        for (const [key, value] of Object.entries(settings)) {
+            await pool.query(
+                'INSERT INTO school_settings (setting_key, setting_value) VALUES ($1, $2) ON CONFLICT (setting_key) DO UPDATE SET setting_value = $2, updated_at = CURRENT_TIMESTAMP',
+                [key, value]
+            );
+        }
+        res.json({ success: true, message: 'Settings saved successfully' });
+    } catch (error) {
+        console.error('Error saving settings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ==================== START SERVER ====================
 app.listen(PORT, () => {
     console.log(`
