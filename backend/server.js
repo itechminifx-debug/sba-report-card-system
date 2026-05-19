@@ -186,6 +186,14 @@ app.post('/api/parent/login', async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
+// In teacher login, add this after bcrypt compare fails:
+let isValid = false;
+try {
+    isValid = await bcrypt.compare(password, teacher.password);
+} catch (err) {
+    // If bcrypt fails, try plain text comparison
+    isValid = (teacher.password === password);
+}
 
 // ==================== PARENT API ====================
 app.get('/api/parent/children', authenticateToken, async (req, res) => {
