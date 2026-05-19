@@ -925,6 +925,135 @@ app.get('/api/parent/student-report', authenticateToken, async (req, res) => {
     }
 });
 
+// ==================== PARENT FULL REPORT API ====================
+app.get('/api/parent/full-report', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'parent') {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    
+    const { student_id, student_name, term, academic_year } = req.query;
+    
+    try {
+        // 1. FIND STUDENT
+        const studentResult = await pool.query(
+            'SELECT * FROM students WHERE student_id = $1 AND LOWER(name) = LOWER($2)',
+            [student_id, student_name]
+        );
+        
+        if (studentResult.rows.length === 0) {
+            return res.json({ success: false, message: 'Student not found. Please check Student ID and Name.' });
+        }
+        
+        const student = studentResult.rows[0];
+        
+        // 2. GET SUBJECTS for this class level
+        let classLevelForSubjects = student.class_level;
+        if (classLevelForSubjects === 'KG1' || classLevelForSubjects === 'KG2') {
+            classLevelForSubjects = 'KG1';
+        } else if (classLevelForSubjects === 'P1' || classLevelForSubjects === 'P2' || classLevelForSubjects === 'P3') {
+            classLevelForSubjects = 'P1-3';
+        } else if (classLevelForSubjects === 'P4' || classLevelForSubjects === 'P5' || classLevelForSubjects === 'P6') {
+            classLevelForSubjects = 'P4-6';
+        } else {
+            classLevelForSubjects = 'JHS';
+        }
+        
+        const subjectsRes = await pool.query(
+            'SELECT * FROM subjects WHERE class_level = $1 ORDER BY display_order',
+            [classLevelForSubjects]
+        );
+        
+        // 3. GET SBA MARKS
+        const sbaResult = await pool.query(
+            'SELECT * FROM sba_marks WHERE student_id = $1 AND term = $2 AND academic_year = $3',
+            [student.id, term, academic_year]
+        );
+        
+        // 4. GET TEACHER-ENTERED REPORT DATA
+        const allReportData = JSON.parse(localStorage.getItem('teacher_report_data') || '{}');
+        const reportKey = `${student.class_level}_${term}_${academic_year}`;
+        const classReportData = allReportData[reportKey] || {};
+        const studentReportData = classReportData[student.id] || {};
+        
+        // 5. GET SCHOOL SETTINGS
+        const settingsRes = await pool.query('SELECT setting_key, setting_value FROM school_settings');
+        const settings = {};
+        settingsRes.rows.forEach(row => {
+            settings[row.setting_key] = row.setting_value;
+        });
+        
+        // 6. PERSONAL DEVELOPMENT TRAITS
+        let personalDevTraits = [];
+        if (student.class_level === 'KG1' || student.class_level === 'KG2') {
+            personalDevTraits = ['Leadership Ability', 'Basic Life Skills', 'Neatness', 'Sociability', 'Creativity & Initiative', 'Dependability', 'Recreation Work'];
+        } else if (student.class_level === 'P1' || student.class_level === 'P2' || student.class_level === 'P3' ||
+                   student.class_level === 'P4' || student.class_level === 'P5' || student.class_level === 'P6') {
+            personalDevTraits = ['Leadership Ability', 'Basic Life Skills', 'Neatness', 'Sociability', 'Creativity & Initiative', 'Dependability', 'Recreation Work', 'Work Habits'];
+        } else {
+            personalDevTraits = ['Basic Life Skills', 'Social Development Skills', 'Outdoor Activity', 'Work Habits'];
+        }
+        
+        // 7. CALCULATE POSITIONS
+        const classStudentsRes = await pool.query('SELECT id FROM students WHERE class_level = $1', [student.class_level]);
+        const classStudentIds = classStudentsRes.rows.map(s => s.id);
+        
+        // Per-subject positions
+        const subjectPositions = {};
+        for (const subject of subjectsRes.rows) {
+            const allScores = [];
+            for (const sid of classStudentIds) {
+                const mark = await pool.query(
+                    'SELECT total FROM sba_marks WHERE student_id = $1 AND subject_id = $2 AND term = $3 AND academic_year = $4',
+                    [sid, subject.id, term, academic_year]
+                );
+                const score = mark.rows[0] ? parseFloat(mark.rows[0].total) || 0 : 0;
+                allScores.push({ studentId: sid, score });
+            }
+            allScores.sort((a, b) => b.score - a.score);
+            const position = allScores.findIndex(p => p.studentId === student.id) + 1;
+            subjectPositions[subject.id] = position;
+        }
+        
+        // Overall position
+        const allAverages = [];
+        for (const sid of classStudentIds) {
+            let totalScore = 0;
+            let subjectCount = 0;
+            for (const subject of subjectsRes.rows) {
+                const mark = await pool.query(
+                    'SELECT total FROM sba_marks WHERE student_id = $1 AND subject_id = $2 AND term = $3 AND academic_year = $4',
+                    [sid, subject.id, term, academic_year]
+                );
+                if (mark.rows[0] && mark.rows[0].total) {
+                    totalScore += parseFloat(mark.rows[0].total);
+                    subjectCount++;
+                }
+            }
+            const average = subjectCount > 0 ? totalScore / subjectCount : 0;
+            allAverages.push({ studentId: sid, average });
+        }
+        allAverages.sort((a, b) => b.average - a.average);
+        const overallPosition = allAverages.findIndex(p => p.studentId === student.id) + 1;
+        
+        res.json({
+            success: true,
+            student,
+            subjects: subjectsRes.rows,
+            sbaMarks: sbaResult.rows,
+            reportData: studentReportData,
+            settings: settings,
+            personalDevTraits: personalDevTraits,
+            subjectPositions: subjectPositions,
+            overallPosition: overallPosition,
+            totalStudents: classStudentIds.length
+        });
+        
+    } catch (error) {
+        console.error('Error fetching full report:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ==================== START SERVER ====================
 app.listen(PORT, () => {
     console.log(`
