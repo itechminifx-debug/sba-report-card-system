@@ -52,7 +52,7 @@
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 1100px;
             margin: 0 auto;
             padding: 30px 20px;
         }
@@ -70,122 +70,155 @@
             margin-bottom: 10px;
         }
         
-        .filter-bar {
+        .form-card {
             background: white;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 25px;
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            align-items: flex-end;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        
-        .filter-group label {
-            font-size: 11px;
-            font-weight: 600;
+        .form-card h2 {
+            margin-bottom: 20px;
             color: #1e293b;
-            text-transform: uppercase;
+            font-size: 20px;
         }
         
-        .filter-group select {
-            padding: 10px 15px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #1e293b;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
             font-size: 14px;
-            min-width: 200px;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #10b981;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
         }
         
         .btn {
             background: #10b981;
             color: white;
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 8px;
-            cursor: pointer;
+            border-radius: 10px;
             font-size: 14px;
             font-weight: 600;
-        }
-        
-        .children-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 25px;
-        }
-        
-        .child-card {
-            background: white;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            transition: transform 0.2s;
             cursor: pointer;
+            width: 100%;
         }
         
-        .child-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        .btn:hover {
+            background: #059669;
         }
         
-        .child-header {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-            padding: 20px;
+        .btn-print {
+            background: #1e293b;
+            margin-top: 20px;
+        }
+        
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .report-card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        
+        .report-header {
             text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #10b981;
         }
         
-        .child-name {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 5px;
+        .report-header h1 {
+            font-size: 22px;
+            color: #1e293b;
         }
         
-        .child-class {
-            font-size: 14px;
-            opacity: 0.9;
+        .report-header h2 {
+            font-size: 16px;
+            color: #10b981;
         }
         
-        .child-info {
-            padding: 20px;
-        }
-        
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #e2e8f0;
+        .student-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
         }
         
         .info-label {
             font-weight: 600;
-            color: #64748b;
+            color: #1e293b;
         }
         
-        .view-btn {
+        .subjects-table {
             width: 100%;
-            padding: 12px;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+        
+        .subjects-table th {
             background: #10b981;
             color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 15px;
+            padding: 10px;
+            text-align: left;
         }
         
-        .view-btn:hover {
-            background: #059669;
+        .subjects-table td {
+            padding: 8px;
+            border-bottom: 1px solid #e2e8f0;
         }
+        
+        .total-row {
+            background: #f8fafc;
+            font-weight: 600;
+        }
+        
+        .grade-A { color: #065f46; font-weight: bold; }
+        .grade-B { color: #1e40af; font-weight: bold; }
+        .grade-C { color: #92400e; font-weight: bold; }
+        .grade-D { color: #9a3412; font-weight: bold; }
+        .grade-E { color: #991b1b; font-weight: bold; }
+        .grade-F { color: #7f1d1d; font-weight: bold; }
         
         .loading {
             text-align: center;
-            padding: 60px;
+            padding: 40px;
             color: #64748b;
         }
         
@@ -203,10 +236,19 @@
             to { transform: rotate(360deg); }
         }
         
+        @media print {
+            .header, .form-card, .btn, .logout-btn, .no-print {
+                display: none !important;
+            }
+            .report-card {
+                box-shadow: none;
+                padding: 20px;
+            }
+        }
+        
         @media (max-width: 768px) {
             .header { flex-direction: column; text-align: center; }
-            .filter-bar { flex-direction: column; }
-            .children-grid { grid-template-columns: 1fr; }
+            .student-info { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -224,46 +266,50 @@
     <div class="container">
         <div class="welcome-card">
             <h1>Welcome, <span id="welcomeName">Parent</span>! 👨‍👩‍👧</h1>
-            <p>Select a child to view their academic report</p>
+            <p>Enter your child's Student ID and Name to view their academic report</p>
         </div>
         
-        <div class="filter-bar">
-            <div class="filter-group">
-                <label>Select Child</label>
-                <select id="childSelect" onchange="loadChildReport()">
-                    <option value="">-- Select Child --</option>
-                </select>
+        <div class="form-card">
+            <h2>🔍 Access Child's Report Card</h2>
+            
+            <div id="errorMsg" class="error-message"></div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Student ID</label>
+                    <input type="text" id="studentId" placeholder="e.g., LS-0001" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Student Name</label>
+                    <input type="text" id="studentName" placeholder="Enter student's full name" autocomplete="off">
+                </div>
             </div>
-            <div class="filter-group">
-                <label>Term</label>
-                <select id="termSelect">
-                    <option value="1">Term 1</option>
-                    <option value="2">Term 2</option>
-                    <option value="3">Term 3</option>
-                </select>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Term</label>
+                    <select id="termSelect">
+                        <option value="1">First Term</option>
+                        <option value="2">Second Term</option>
+                        <option value="3">Third Term</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Academic Year</label>
+                    <input type="text" id="academicYear" value="2025/2026">
+                </div>
             </div>
-            <div class="filter-group">
-                <label>Academic Year</label>
-                <input type="text" id="academicYear" value="2025/2026" style="width: 120px;">
-            </div>
-            <button class="btn" onclick="loadChildReport()">View Report</button>
+            
+            <button class="btn" onclick="fetchStudentReport()">📄 View Report Card</button>
         </div>
         
-        <div id="reportContainer">
-            <div class="loading">
-                <div class="spinner"></div>
-                <p>Select a child to view their report card</p>
-            </div>
-        </div>
+        <div id="reportContainer"></div>
     </div>
-    
-    <div class="toast" id="toast"></div>
 
     <script>
         const API_URL = '';
         let parentToken = null;
         let parent = null;
-        let children = [];
         
         // Check parent login
         parentToken = localStorage.getItem('parentToken');
@@ -275,73 +321,63 @@
         document.getElementById('parentName').innerText = parent.name || 'Parent';
         document.getElementById('welcomeName').innerText = parent.name || 'Parent';
         
-        // Load children into dropdown
-        async function loadChildren() {
-            try {
-                const response = await fetch(API_URL + '/api/parent/children', {
-                    headers: { 'Authorization': `Bearer ${parentToken}` }
-                });
-                children = await response.json();
-                
-                const childSelect = document.getElementById('childSelect');
-                if (children.length === 0) {
-                    childSelect.innerHTML = '<option value="">No children found</option>';
-                } else {
-                    let html = '<option value="">-- Select Child --</option>';
-                    children.forEach(child => {
-                        html += `<option value="${child.id}">${escapeHtml(child.name)} (${child.student_id}) - ${getClassName(child.class_level)}</option>`;
-                    });
-                    childSelect.innerHTML = html;
-                }
-            } catch (error) {
-                console.error('Error loading children:', error);
-            }
-        }
-        
-        function getClassName(classLevel) {
-            const classes = {
-                'KG1': 'KG 1', 'KG2': 'KG 2',
-                'P1': 'Primary 1', 'P2': 'Primary 2', 'P3': 'Primary 3',
-                'P4': 'Primary 4', 'P5': 'Primary 5', 'P6': 'Primary 6',
-                'JHS1': 'JHS 1', 'JHS2': 'JHS 2', 'JHS3': 'JHS 3'
-            };
-            return classes[classLevel] || classLevel;
-        }
-        
-        async function loadChildReport() {
-            const childId = document.getElementById('childSelect').value;
+        async function fetchStudentReport() {
+            const studentId = document.getElementById('studentId').value.trim();
+            const studentName = document.getElementById('studentName').value.trim();
             const term = document.getElementById('termSelect').value;
             const academicYear = document.getElementById('academicYear').value;
+            const errorMsg = document.getElementById('errorMsg');
             
-            if (!childId) {
-                document.getElementById('reportContainer').innerHTML = '<div class="loading"><p>Please select a child</p></div>';
+            errorMsg.style.display = 'none';
+            
+            if (!studentId || !studentName) {
+                errorMsg.innerText = 'Please enter both Student ID and Student Name';
+                errorMsg.style.display = 'block';
                 return;
             }
             
-            document.getElementById('reportContainer').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading report...</p></div>';
+            document.getElementById('reportContainer').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading report card...</p></div>';
             
             try {
-                const response = await fetch(API_URL + `/api/parent/child/${childId}/report?term=${term}&academic_year=${academicYear}`, {
+                const response = await fetch(API_URL + `/api/parent/student-report?student_id=${encodeURIComponent(studentId)}&student_name=${encodeURIComponent(studentName)}&term=${term}&academic_year=${academicYear}`, {
                     headers: { 'Authorization': `Bearer ${parentToken}` }
                 });
+                
                 const data = await response.json();
                 
-                renderReport(data, term, academicYear);
+                if (data.success) {
+                    renderReportCard(data, term, academicYear);
+                } else {
+                    errorMsg.innerText = data.message || 'Student not found. Please check the Student ID and Name.';
+                    errorMsg.style.display = 'block';
+                    document.getElementById('reportContainer').innerHTML = '';
+                }
             } catch (error) {
-                console.error('Error loading report:', error);
-                document.getElementById('reportContainer').innerHTML = '<div class="loading"><p>Error loading report. Please try again.</p></div>';
+                console.error('Error:', error);
+                errorMsg.innerText = 'Error loading report. Please try again.';
+                errorMsg.style.display = 'block';
+                document.getElementById('reportContainer').innerHTML = '';
             }
         }
         
-        function renderReport(data, term, academicYear) {
+        function renderReportCard(data, term, academicYear) {
             const student = data.student;
             const subjects = data.subjects;
             const sbaMarks = data.sbaMarks;
             
             const termText = term === '1' ? 'First Term' : (term === '2' ? 'Second Term' : 'Third Term');
-            const className = getClassName(student.class_level);
             
-            // Calculate subject performance
+            function getClassName(classLevel) {
+                const classes = {
+                    'KG1': 'KG 1', 'KG2': 'KG 2',
+                    'P1': 'Primary 1', 'P2': 'Primary 2', 'P3': 'Primary 3',
+                    'P4': 'Primary 4', 'P5': 'Primary 5', 'P6': 'Primary 6',
+                    'JHS1': 'JHS 1', 'JHS2': 'JHS 2', 'JHS3': 'JHS 3'
+                };
+                return classes[classLevel] || classLevel;
+            }
+            
+            // Build subjects table
             let subjectsHtml = '';
             let totalScore = 0;
             let subjectCount = 0;
@@ -364,8 +400,8 @@
                 subjectsHtml += `
                     <tr>
                         <td>${escapeHtml(subject.name)}</td>
-                        <td><strong>${total.toFixed(1)}%</strong></td>
-                        <td><strong class="grade-${grade}">${grade}</strong></td>
+                        <td style="text-align: center;"><strong>${total.toFixed(1)}%</strong></td>
+                        <td style="text-align: center;"><strong class="grade-${grade}">${grade}</strong></td>
                         <td>${gradeRemark}</td>
                     </tr>
                 `;
@@ -386,36 +422,38 @@
                 motto: localStorage.getItem('schoolMotto') || 'Excellence in Education'
             };
             
+            const className = getClassName(student.class_level);
+            
             const reportHtml = `
-                <div class="report-card" style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                    <div style="text-align: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #10b981;">
-                        <h1 style="font-size: 22px; color: #1e293b;">${escapeHtml(settings.name)}</h1>
-                        <h2 style="font-size: 16px; color: #10b981;">END OF ${termText.toUpperCase()} REPORT CARD</h2>
+                <div class="report-card">
+                    <div class="report-header">
+                        <h1>${escapeHtml(settings.name)}</h1>
+                        <h2>END OF ${termText.toUpperCase()} REPORT CARD</h2>
                         <div style="font-size: 11px; color: #64748b;">${escapeHtml(settings.address)}</div>
                         <div style="font-size: 11px; color: #64748b;">Motto: ${escapeHtml(settings.motto)}</div>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; padding: 12px; background: #f8fafc; border-radius: 8px; font-size: 13px;">
-                        <div><span style="font-weight: 600;">Student Name:</span> ${escapeHtml(student.name)}</div>
-                        <div><span style="font-weight: 600;">Student ID:</span> ${student.student_id}</div>
-                        <div><span style="font-weight: 600;">Class:</span> ${className}</div>
-                        <div><span style="font-weight: 600;">House:</span> ${student.house || 'Not Assigned'}</div>
-                        <div><span style="font-weight: 600;">Academic Year:</span> ${academicYear}</div>
-                        <div><span style="font-weight: 600;">Term:</span> ${termText}</div>
+                    <div class="student-info">
+                        <div><span class="info-label">Student Name:</span> ${escapeHtml(student.name)}</div>
+                        <div><span class="info-label">Student ID:</span> ${student.student_id}</div>
+                        <div><span class="info-label">Class:</span> ${className}</div>
+                        <div><span class="info-label">House:</span> ${student.house || 'Not Assigned'}</div>
+                        <div><span class="info-label">Academic Year:</span> ${academicYear}</div>
+                        <div><span class="info-label">Term:</span> ${termText}</div>
                     </div>
                     
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
+                    <table class="subjects-table">
                         <thead>
-                            <tr style="background: #10b981; color: white;">
-                                <th style="padding: 8px; text-align: left;">Subject</th>
-                                <th style="padding: 8px; text-align: center;">Score (%)</th>
-                                <th style="padding: 8px; text-align: center;">Grade</th>
-                                <th style="padding: 8px; text-align: left;">Remarks</th>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Score (%)</th>
+                                <th>Grade</th>
+                                <th>Remarks</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${subjectsHtml}
-                            <tr style="background: #f8fafc; font-weight: 600;">
+                            <tr class="total-row">
                                 <td><strong>Overall Average</strong></td>
                                 <td style="text-align: center;"><strong>${average}%</strong></td>
                                 <td style="text-align: center;"><strong>${overallGrade}</strong></td>
@@ -428,16 +466,12 @@
                         <p>Parent Portal - Generated on ${new Date().toLocaleDateString()}</p>
                     </div>
                 </div>
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="btn btn-print" onclick="window.print()">🖨️ Print Report Card</button>
+                </div>
             `;
             
             document.getElementById('reportContainer').innerHTML = reportHtml;
-            
-            // Add print button
-            const printBtn = document.createElement('div');
-            printBtn.style.marginTop = '20px';
-            printBtn.style.textAlign = 'right';
-            printBtn.innerHTML = '<button class="btn" onclick="window.print()">🖨️ Print Report Card</button>';
-            document.getElementById('reportContainer').appendChild(printBtn);
         }
         
         function logout() {
@@ -455,9 +489,6 @@
                 return m;
             });
         }
-        
-        // Initialize
-        loadChildren();
     </script>
 </body>
 </html>
