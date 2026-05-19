@@ -47,13 +47,13 @@ const authenticateToken = (req, res, next) => {
     }
 };
 
-// ==================== ADMIN LOGIN (Fixed with hardcoded backup) ====================
+// ==================== ADMIN LOGIN ====================
 app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body;
     
     console.log('Admin login attempt:', username);
     
-    // HARDCODED ADMIN FOR TESTING - This will work even if database fails
+    // Hardcoded admin for testing
     if (username === 'admin' && password === 'admin123') {
         const token = jwt.sign(
             { id: '1', username: 'admin', role: 'admin' },
@@ -67,7 +67,6 @@ app.post('/api/auth/login', async (req, res) => {
         });
     }
     
-    // Try database lookup
     try {
         const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
         const user = result.rows[0];
@@ -94,16 +93,14 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// ==================== TEACHER LOGIN (Fixed with hardcoded backup) ====================
+// ==================== TEACHER LOGIN ====================
 app.post('/api/teacher/login', async (req, res) => {
     const { email, password } = req.body;
     
     console.log('Teacher login attempt:', email);
-    console.log('Password received:', password);
     
-    // HARDCODED TEACHER FOR TESTING - This will work even if database fails
+    // Hardcoded teacher for testing
     if (email === 'teacher@livingspring.edu.gh' && password === 'teacher123') {
-        console.log('Hardcoded teacher login successful');
         const token = jwt.sign(
             { id: '1', email: email, name: 'Demo Teacher', assigned_class: 'P4' },
             process.env.JWT_SECRET || 'mySecretKey123',
@@ -112,35 +109,15 @@ app.post('/api/teacher/login', async (req, res) => {
         return res.json({ 
             success: true, 
             token, 
-            teacher: { 
-                id: '1', 
-                name: 'Demo Teacher', 
-                email: email, 
-                assigned_class: 'P4' 
-            } 
+            teacher: { id: '1', name: 'Demo Teacher', email: email, assigned_class: 'P4' } 
         });
     }
     
-    // Also try database lookup
     try {
-        // Check if teachers table exists
-        const tableCheck = await pool.query(`
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_name = 'teachers'
-            );
-        `);
-        
-        if (!tableCheck.rows[0].exists) {
-            console.log('Teachers table does not exist');
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
-        
         const result = await pool.query('SELECT * FROM teachers WHERE email = $1', [email]);
         const teacher = result.rows[0];
         
         if (!teacher) {
-            console.log('Teacher not found in database');
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
         
@@ -148,12 +125,10 @@ app.post('/api/teacher/login', async (req, res) => {
         try {
             isValid = await bcrypt.compare(password, teacher.password);
         } catch (err) {
-            console.log('bcrypt error:', err.message);
             isValid = (teacher.password === password);
         }
         
         if (!isValid) {
-            console.log('Invalid password');
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
         
@@ -174,9 +149,102 @@ app.post('/api/teacher/login', async (req, res) => {
     }
 });
 
-// ==================== STUDENT API ====================
+// ==================== PARENT LOGIN ====================
+app.post('/api/parent/login', async (req, res) => {
+    const { email, password } = req.body;
+    
+    console.log('Parent login attempt:', email);
+    
+    try {
+        const result = await pool.query('SELECT * FROM parents WHERE email = $1', [email]);
+        const parent = result.rows[0];
+        
+        if (!parent) {
+            console.log('Parent not found:', email);
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+        
+        const isValid = await bcrypt.compare(password, parent.password);
+        if (!isValid) {
+            console.log('Invalid password for:', email);
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+        
+        const token = jwt.sign(
+            { id: parent.id, email: parent.email, name: parent.name, role: 'parent' },
+            process.env.JWT_SECRET || 'mySecretKey123',
+            { expiresIn: '24h' }
+        );
+        
+        res.json({ 
+            success: true, 
+            token, 
+            parent: { id: parent.id, name: parent.name, email: parent.email } 
+        });
+    } catch (error) {
+        console.error('Parent login error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
-// Get all students
+// ==================== PARENT API ====================
+app.get('/api/parent/children', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'parent') {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    
+    try {
+        const result = await pool.query(`
+            SELECT s.* FROM students s
+            JOIN parent_student_link psl ON s.id = psl.student_id
+            WHERE psl.parent_id = $1
+        `, [req.user.id]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/parent/child/:childId/report', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'parent') {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    
+    const { childId } = req.params;
+    const { term, academic_year } = req.query;
+    
+    try {
+        const accessCheck = await pool.query(
+            'SELECT * FROM parent_student_link WHERE parent_id = $1 AND student_id = $2',
+            [req.user.id, childId]
+        );
+        
+        if (accessCheck.rows.length === 0) {
+            return res.status(403).json({ success: false, message: 'Access denied to this student' });
+        }
+        
+        const studentResult = await pool.query('SELECT * FROM students WHERE id = $1', [childId]);
+        const student = studentResult.rows[0];
+        
+        const subjectsRes = await pool.query('SELECT * FROM subjects WHERE class_level = $1', [student.class_level]);
+        
+        const sbaResult = await pool.query(
+            'SELECT * FROM sba_marks WHERE student_id = $1 AND term = $2 AND academic_year = $3',
+            [childId, term, academic_year]
+        );
+        
+        res.json({
+            student,
+            subjects: subjectsRes.rows,
+            sbaMarks: sbaResult.rows,
+            reportData: {}
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ==================== STUDENT API ====================
 app.get('/api/students', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM students ORDER BY name');
@@ -187,7 +255,6 @@ app.get('/api/students', async (req, res) => {
     }
 });
 
-// Get single student
 app.get('/api/students/:id', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM students WHERE id = $1', [req.params.id]);
@@ -201,7 +268,6 @@ app.get('/api/students/:id', async (req, res) => {
     }
 });
 
-// Create student
 app.post('/api/students', async (req, res) => {
     const { name, class_level, house, gender, student_id } = req.body;
     
@@ -234,7 +300,6 @@ app.post('/api/students', async (req, res) => {
     }
 });
 
-// Update student
 app.put('/api/students/:id', async (req, res) => {
     const { name, class_level, house, gender } = req.body;
     
@@ -259,13 +324,9 @@ app.put('/api/students/:id', async (req, res) => {
     }
 });
 
-// Delete student
 app.delete('/api/students/:id', async (req, res) => {
     try {
-        // First delete related SBA marks
         await pool.query('DELETE FROM sba_marks WHERE student_id = $1', [req.params.id]);
-        
-        // Then delete the student
         const result = await pool.query('DELETE FROM students WHERE id = $1 RETURNING id', [req.params.id]);
         
         if (result.rows.length === 0) {
@@ -280,7 +341,6 @@ app.delete('/api/students/:id', async (req, res) => {
 });
 
 // ==================== SUBJECTS API ====================
-
 app.get('/api/subjects', async (req, res) => {
     const { class_level } = req.query;
     try {
@@ -313,7 +373,6 @@ app.get('/api/subjects', async (req, res) => {
 });
 
 // ==================== TEACHER API ====================
-
 app.get('/api/teacher/students', async (req, res) => {
     const { class_level } = req.query;
     try {
@@ -369,7 +428,6 @@ app.get('/api/teacher/stats', async (req, res) => {
 });
 
 // ==================== SBA API ====================
-
 app.get('/api/sba', async (req, res) => {
     const { subject_id, term, academic_year } = req.query;
     try {
@@ -466,42 +524,7 @@ app.put('/api/sba/:id', async (req, res) => {
     }
 });
 
-// ==================== DASHBOARD STATS ====================
-
-app.get('/api/stats', async (req, res) => {
-    try {
-        const studentResult = await pool.query('SELECT COUNT(*) FROM students');
-        const studentCount = parseInt(studentResult.rows[0].count);
-        
-        res.json({
-            studentCount: studentCount,
-            classLevels: 12,
-            currentTerm: parseInt(localStorage.getItem('currentTerm') || '1'),
-            academicYear: localStorage.getItem('academicYear') || '2025/2026'
-        });
-    } catch (error) {
-        console.error('Stats error:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// ==================== HEALTH CHECK ====================
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'Server is running' });
-});
-
-// ==================== SERVE FRONTEND ====================
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
-});
-
-app.get('/:page.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend', `${req.params.page}.html`));
-});
-
 // ==================== SETTINGS API ====================
-
-// Get all settings
 app.get('/api/settings', async (req, res) => {
     try {
         const result = await pool.query('SELECT setting_key, setting_value FROM school_settings');
@@ -516,7 +539,6 @@ app.get('/api/settings', async (req, res) => {
     }
 });
 
-// Update settings
 app.post('/api/settings', async (req, res) => {
     const settings = req.body;
     
@@ -534,107 +556,36 @@ app.post('/api/settings', async (req, res) => {
     }
 });
 
-// ==================== PARENT API ====================
-
-// Parent login
-app.post('/api/parent/login', async (req, res) => {
-    const { email, password } = req.body;
-    
+// ==================== DASHBOARD STATS ====================
+app.get('/api/stats', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM parents WHERE email = $1', [email]);
-        const parent = result.rows[0];
-        
-        if (!parent) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
-        
-        const isValid = await bcrypt.compare(password, parent.password);
-        if (!isValid) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
-        
-        const token = jwt.sign(
-            { id: parent.id, email: parent.email, name: parent.name, role: 'parent' },
-            process.env.JWT_SECRET || 'mySecretKey123',
-            { expiresIn: '24h' }
-        );
-        
-        res.json({ 
-            success: true, 
-            token, 
-            parent: { id: parent.id, name: parent.name, email: parent.email } 
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// Get parent's children
-app.get('/api/parent/children', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'parent') {
-        return res.status(403).json({ success: false, message: 'Access denied' });
-    }
-    
-    try {
-        const result = await pool.query(`
-            SELECT s.* FROM students s
-            JOIN parent_student_link psl ON s.id = psl.student_id
-            WHERE psl.parent_id = $1
-        `, [req.user.id]);
-        res.json(result.rows);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Get child's report card data
-app.get('/api/parent/child/:childId/report', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'parent') {
-        return res.status(403).json({ success: false, message: 'Access denied' });
-    }
-    
-    const { childId } = req.params;
-    const { term, academic_year } = req.query;
-    
-    try {
-        // Verify parent has access to this child
-        const accessCheck = await pool.query(
-            'SELECT * FROM parent_student_link WHERE parent_id = $1 AND student_id = $2',
-            [req.user.id, childId]
-        );
-        
-        if (accessCheck.rows.length === 0) {
-            return res.status(403).json({ success: false, message: 'Access denied to this student' });
-        }
-        
-        // Get student details
-        const studentResult = await pool.query('SELECT * FROM students WHERE id = $1', [childId]);
-        const student = studentResult.rows[0];
-        
-        // Get subjects for this class
-        const subjectsRes = await pool.query('SELECT * FROM subjects WHERE class_level = $1', [student.class_level]);
-        
-        // Get SBA marks
-        const sbaResult = await pool.query(
-            'SELECT * FROM sba_marks WHERE student_id = $1 AND term = $2 AND academic_year = $3',
-            [childId, term, academic_year]
-        );
-        
-        // Get report data from localStorage (teacher entered)
-        const reportDataKey = `${student.class_level}_${term}_${academic_year}`;
-        const allReportData = JSON.parse(localStorage.getItem('teacher_report_data') || '{}');
-        const reportData = allReportData[reportDataKey] || {};
-        const studentReportData = reportData[childId] || {};
+        const studentResult = await pool.query('SELECT COUNT(*) FROM students');
+        const studentCount = parseInt(studentResult.rows[0].count);
         
         res.json({
-            student,
-            subjects: subjectsRes.rows,
-            sbaMarks: sbaResult.rows,
-            reportData: studentReportData
+            studentCount: studentCount,
+            classLevels: 12,
+            currentTerm: 1,
+            academicYear: '2025/2026'
         });
     } catch (error) {
+        console.error('Stats error:', error);
         res.status(500).json({ error: error.message });
     }
+});
+
+// ==================== HEALTH CHECK ====================
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'Server is running', timestamp: new Date().toISOString() });
+});
+
+// ==================== SERVE FRONTEND ====================
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
+});
+
+app.get('/:page.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend', `${req.params.page}.html`));
 });
 
 // ==================== START SERVER ====================
@@ -650,6 +601,7 @@ app.listen(PORT, () => {
 ║     🔐 Login Credentials:                                ║
 ║     Admin: admin / admin123                              ║
 ║     Teacher: teacher@livingspring.edu.gh / teacher123    ║
+║     Parent: parent@livingspring.edu.gh / parent123       ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
     `);
