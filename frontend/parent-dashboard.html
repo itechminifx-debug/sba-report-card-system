@@ -170,6 +170,12 @@
             color: #10b981;
         }
         
+        .school-address {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+        
         .student-info {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -207,6 +213,60 @@
         .total-row {
             background: #f8fafc;
             font-weight: 600;
+        }
+        
+        .personal-dev {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .dev-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .dev-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+        
+        .attendance-section {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .conduct-interest {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .remarks-section {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
         }
         
         .grade-A { color: #065f46; font-weight: bold; }
@@ -248,7 +308,7 @@
         
         @media (max-width: 768px) {
             .header { flex-direction: column; text-align: center; }
-            .student-info { grid-template-columns: 1fr; }
+            .student-info, .attendance-section, .conduct-interest { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -266,7 +326,7 @@
     <div class="container">
         <div class="welcome-card">
             <h1>Welcome, <span id="welcomeName">Parent</span>! 👨‍👩‍👧</h1>
-            <p>Enter your child's Student ID and Name to view their academic report</p>
+            <p>Enter your child's Student ID and Name to view their complete academic report</p>
         </div>
         
         <div class="form-card">
@@ -300,7 +360,7 @@
                 </div>
             </div>
             
-            <button class="btn" onclick="fetchStudentReport()">📄 View Report Card</button>
+            <button class="btn" onclick="fetchStudentReport()">📄 View Complete Report Card</button>
         </div>
         
         <div id="reportContainer"></div>
@@ -321,6 +381,29 @@
         document.getElementById('parentName').innerText = parent.name || 'Parent';
         document.getElementById('welcomeName').innerText = parent.name || 'Parent';
         
+        // Load school settings
+        let schoolSettings = {};
+        
+        async function loadSchoolSettings() {
+            try {
+                const response = await fetch(API_URL + '/api/settings');
+                schoolSettings = await response.json();
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+        
+        function getPersonalDevTraits(classLevel) {
+            if (classLevel === 'KG1' || classLevel === 'KG2') {
+                return ['Leadership Ability', 'Basic Life Skills', 'Neatness', 'Sociability', 'Creativity & Initiative', 'Dependability', 'Recreation Work'];
+            } else if (classLevel === 'P1' || classLevel === 'P2' || classLevel === 'P3' ||
+                       classLevel === 'P4' || classLevel === 'P5' || classLevel === 'P6') {
+                return ['Leadership Ability', 'Basic Life Skills', 'Neatness', 'Sociability', 'Creativity & Initiative', 'Dependability', 'Recreation Work', 'Work Habits'];
+            } else {
+                return ['Basic Life Skills', 'Social Development Skills', 'Outdoor Activity', 'Work Habits'];
+            }
+        }
+        
         async function fetchStudentReport() {
             const studentId = document.getElementById('studentId').value.trim();
             const studentName = document.getElementById('studentName').value.trim();
@@ -339,6 +422,8 @@
             document.getElementById('reportContainer').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading report card...</p></div>';
             
             try {
+                await loadSchoolSettings();
+                
                 const response = await fetch(API_URL + `/api/parent/student-report?student_id=${encodeURIComponent(studentId)}&student_name=${encodeURIComponent(studentName)}&term=${term}&academic_year=${academicYear}`, {
                     headers: { 'Authorization': `Bearer ${parentToken}` }
                 });
@@ -346,7 +431,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    renderReportCard(data, term, academicYear);
+                    renderCompleteReportCard(data, term, academicYear);
                 } else {
                     errorMsg.innerText = data.message || 'Student not found. Please check the Student ID and Name.';
                     errorMsg.style.display = 'block';
@@ -360,12 +445,15 @@
             }
         }
         
-        function renderReportCard(data, term, academicYear) {
+        function renderCompleteReportCard(data, term, academicYear) {
             const student = data.student;
             const subjects = data.subjects;
             const sbaMarks = data.sbaMarks;
+            const reportData = data.reportData || {};
             
             const termText = term === '1' ? 'First Term' : (term === '2' ? 'Second Term' : 'Third Term');
+            const className = getClassName(student.class_level);
+            const personalDevTraits = getPersonalDevTraits(student.class_level);
             
             function getClassName(classLevel) {
                 const classes = {
@@ -384,25 +472,29 @@
             
             for (const subject of subjects) {
                 const mark = sbaMarks.find(m => m.subject_id === subject.id);
+                const classScore = mark ? (parseFloat(mark.class_score) || 0) : 0;
+                const examScore = mark ? (parseFloat(mark.exam_score) || 0) : 0;
                 const total = mark ? (parseFloat(mark.total) || 0) : 0;
                 totalScore += total;
                 subjectCount++;
                 
                 let grade = '';
                 let gradeRemark = '';
-                if (total >= 80) { grade = 'A'; gradeRemark = 'Excellent'; }
-                else if (total >= 70) { grade = 'B'; gradeRemark = 'Very Good'; }
-                else if (total >= 60) { grade = 'C'; gradeRemark = 'Good'; }
-                else if (total >= 50) { grade = 'D'; gradeRemark = 'Satisfactory'; }
-                else if (total >= 40) { grade = 'E'; gradeRemark = 'Weak'; }
-                else { grade = 'F'; gradeRemark = 'Fail'; }
+                if (total >= 80) { grade = 'A'; gradeRemark = schoolSettings.grade_a_remark || 'Excellent'; }
+                else if (total >= 70) { grade = 'B'; gradeRemark = schoolSettings.grade_b_remark || 'Very Good'; }
+                else if (total >= 60) { grade = 'C'; gradeRemark = schoolSettings.grade_c_remark || 'Good'; }
+                else if (total >= 50) { grade = 'D'; gradeRemark = schoolSettings.grade_d_remark || 'Satisfactory'; }
+                else if (total >= 40) { grade = 'E'; gradeRemark = schoolSettings.grade_e_remark || 'Weak'; }
+                else { grade = 'F'; gradeRemark = schoolSettings.grade_f_remark || 'Fail'; }
                 
                 subjectsHtml += `
                     <tr>
-                        <td>${escapeHtml(subject.name)}</td>
-                        <td style="text-align: center;"><strong>${total.toFixed(1)}%</strong></td>
-                        <td style="text-align: center;"><strong class="grade-${grade}">${grade}</strong></td>
-                        <td>${gradeRemark}</td>
+                        <td>${escapeHtml(subject.name)}</span></td>
+                        <td>${classScore.toFixed(1)}%</span></td>
+                        <td>${examScore.toFixed(1)}%</span></td>
+                        <td><strong>${total.toFixed(1)}%</strong></span></td>
+                        <td><strong class="grade-${grade}">${grade}</strong></span></td>
+                        <td>${gradeRemark}</span></span></td>
                     </tr>
                 `;
             }
@@ -416,21 +508,36 @@
             else if (average >= 40) overallGrade = 'E';
             else overallGrade = 'F';
             
-            const settings = {
-                name: localStorage.getItem('schoolName') || 'Living Spring Adventist Academy',
-                address: localStorage.getItem('schoolAddress') || 'P.O. Box 123, Accra - Ghana',
-                motto: localStorage.getItem('schoolMotto') || 'Excellence in Education'
-            };
+            // Personal Development
+            let devHtml = '';
+            for (let i = 0; i < personalDevTraits.length; i++) {
+                const grade = reportData[`pd_${i}`] || '—';
+                devHtml += `<div class="dev-item"><span>${personalDevTraits[i]}:</span><span><strong>${grade}</strong></span></div>`;
+            }
             
-            const className = getClassName(student.class_level);
+            // Attendance and other data
+            const attendancePresent = reportData.attendance_present || '___';
+            const attendanceTotal = reportData.attendance_total || '___';
+            const promotedTo = reportData.promoted_to || '_____________';
+            const conduct = reportData.conduct || '_____________';
+            const interest = reportData.interest || '_____________';
+            const teacherRemarks = reportData.teacher_remarks || '_________________________________';
+            const headteacherRemarks = reportData.headteacher_remarks || '_________________________________';
+            
+            // Logo display
+            const logoDisplay = schoolSettings.logo_url && (schoolSettings.logo_url.startsWith('http') || schoolSettings.logo_url.startsWith('/')) 
+                ? `<img src="${schoolSettings.logo_url}" style="max-height: 60px; margin-bottom: 10px;">` 
+                : `<div style="font-size: 40px;">${schoolSettings.logo_url || '🏫'}</div>`;
             
             const reportHtml = `
                 <div class="report-card">
                     <div class="report-header">
-                        <h1>${escapeHtml(settings.name)}</h1>
+                        ${logoDisplay}
+                        <h1>${escapeHtml(schoolSettings.school_name || 'Living Spring Adventist Academy')}</h1>
                         <h2>END OF ${termText.toUpperCase()} REPORT CARD</h2>
-                        <div style="font-size: 11px; color: #64748b;">${escapeHtml(settings.address)}</div>
-                        <div style="font-size: 11px; color: #64748b;">Motto: ${escapeHtml(settings.motto)}</div>
+                        <div class="school-address">${escapeHtml(schoolSettings.school_address || 'P.O. Box 123, Accra - Ghana')}</div>
+                        <div class="school-address">📧 ${schoolSettings.school_email || 'info@livingspring.edu.gh'} | 📞 ${schoolSettings.school_phone || '+233 XX XXX XXXX'}</div>
+                        <div class="school-address">Motto: ${escapeHtml(schoolSettings.school_motto || 'Excellence in Education')}</div>
                     </div>
                     
                     <div class="student-info">
@@ -442,11 +549,19 @@
                         <div><span class="info-label">Term:</span> ${termText}</div>
                     </div>
                     
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; padding: 12px; background: #f8fafc; border-radius: 8px;">
+                        <div><span class="info-label">Term Begins:</span> ${schoolSettings.term_begins || '_____________'}</div>
+                        <div><span class="info-label">Term Ends:</span> ${schoolSettings.term_ends || '_____________'}</div>
+                        <div><span class="info-label">Next Term Reopens:</span> ${schoolSettings.next_term_reopens || '_____________'}</div>
+                    </div>
+                    
                     <table class="subjects-table">
                         <thead>
                             <tr>
                                 <th>Subject</th>
-                                <th>Score (%)</th>
+                                <th>Class Score (50%)</th>
+                                <th>Exam Score (50%)</th>
+                                <th>Total (100%)</th>
                                 <th>Grade</th>
                                 <th>Remarks</th>
                             </tr>
@@ -454,15 +569,48 @@
                         <tbody>
                             ${subjectsHtml}
                             <tr class="total-row">
-                                <td><strong>Overall Average</strong></td>
-                                <td style="text-align: center;"><strong>${average}%</strong></td>
-                                <td style="text-align: center;"><strong>${overallGrade}</strong></td>
-                                <td>—</td>
+                                <td colspan="3"><strong>Overall Average</strong></td>
+                                <td><strong>${average}%</strong></span></td>
+                                <td><strong>${overallGrade}</strong></span></td>
+                                <td>—</span></td>
                             </tr>
                         </tbody>
                     </table>
                     
-                    <div style="margin-top: 20px; text-align: center; font-size: 10px; color: #64748b;">
+                    <div class="personal-dev">
+                        <h4>📋 Personal Development</h4>
+                        <div class="dev-grid">
+                            ${devHtml}
+                        </div>
+                    </div>
+                    
+                    <div class="attendance-section">
+                        <div><span class="info-label">Total Attendance:</span> ${attendancePresent} out of ${attendanceTotal} days</div>
+                        <div><span class="info-label">Promoted to:</span> ${escapeHtml(promotedTo)}</div>
+                    </div>
+                    
+                    <div class="conduct-interest">
+                        <div><span class="info-label">Conduct:</span> ${escapeHtml(conduct)}</div>
+                        <div><span class="info-label">Interest:</span> ${escapeHtml(interest)}</div>
+                    </div>
+                    
+                    <div class="remarks-section">
+                        <div><span class="info-label">Class Teacher's Remarks:</span> ${escapeHtml(teacherRemarks)}</div>
+                        <div style="margin-top:10px;"><span class="info-label">Headteacher's Remarks:</span> ${escapeHtml(headteacherRemarks)}</div>
+                    </div>
+                    
+                    <div class="signature-section">
+                        <div>
+                            <p>Class Teacher's Signature: ___________________</p>
+                            <p>Date: ___________</p>
+                        </div>
+                        <div>
+                            <p>Headteacher's Signature: ___________________</p>
+                            <p>Date: ___________</p>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; text-align: center; font-size: 10px; color: #64748b;">
                         <p>Parent Portal - Generated on ${new Date().toLocaleDateString()}</p>
                     </div>
                 </div>
@@ -489,6 +637,9 @@
                 return m;
             });
         }
+        
+        // Initialize
+        loadSchoolSettings();
     </script>
 </body>
 </html>
