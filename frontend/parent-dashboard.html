@@ -52,7 +52,7 @@
         }
         
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 30px 20px;
         }
@@ -65,23 +65,12 @@
             margin-bottom: 30px;
         }
         
-        .welcome-card h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-        
         .form-card {
             background: white;
             border-radius: 20px;
             padding: 30px;
             margin-bottom: 30px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        
-        .form-card h2 {
-            margin-bottom: 20px;
-            color: #1e293b;
-            font-size: 20px;
         }
         
         .form-group {
@@ -104,11 +93,6 @@
             font-size: 14px;
         }
         
-        .form-group input:focus {
-            outline: none;
-            border-color: #10b981;
-        }
-        
         .form-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -127,10 +111,6 @@
             width: 100%;
         }
         
-        .btn:hover {
-            background: #059669;
-        }
-        
         .btn-print {
             background: #1e293b;
             margin-top: 20px;
@@ -145,6 +125,7 @@
             display: none;
         }
         
+        /* Full Report Card Styles */
         .report-card {
             background: white;
             padding: 30px;
@@ -155,19 +136,20 @@
         
         .report-header {
             text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
             border-bottom: 2px solid #10b981;
         }
         
         .report-header h1 {
-            font-size: 22px;
+            font-size: 24px;
             color: #1e293b;
         }
         
         .report-header h2 {
             font-size: 16px;
             color: #10b981;
+            margin-top: 5px;
         }
         
         .school-address {
@@ -178,12 +160,12 @@
         
         .student-info {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
             padding: 15px;
             background: #f8fafc;
-            border-radius: 8px;
+            border-radius: 12px;
         }
         
         .info-label {
@@ -191,10 +173,20 @@
             color: #1e293b;
         }
         
+        .dates-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+        
         .subjects-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             font-size: 13px;
         }
         
@@ -202,12 +194,18 @@
             background: #10b981;
             color: white;
             padding: 10px;
-            text-align: left;
+            text-align: center;
+            font-size: 12px;
         }
         
         .subjects-table td {
             padding: 8px;
             border-bottom: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        
+        .subjects-table td:first-child {
+            text-align: left;
         }
         
         .total-row {
@@ -216,10 +214,15 @@
         }
         
         .personal-dev {
-            margin: 20px 0;
+            margin: 25px 0;
             padding: 15px;
             background: #f8fafc;
-            border-radius: 8px;
+            border-radius: 12px;
+        }
+        
+        .personal-dev h4 {
+            margin-bottom: 12px;
+            font-size: 16px;
         }
         
         .dev-grid {
@@ -231,41 +234,42 @@
         .dev-item {
             display: flex;
             justify-content: space-between;
-            padding: 5px 0;
+            padding: 6px 0;
+            border-bottom: 1px solid #e2e8f0;
         }
         
-        .attendance-section {
+        .attendance-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 15px;
-            margin: 15px 0;
+            margin-bottom: 25px;
             padding: 15px;
             background: #f8fafc;
-            border-radius: 8px;
+            border-radius: 12px;
         }
         
-        .conduct-interest {
+        .conduct-row {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 15px;
-            margin: 15px 0;
+            margin-bottom: 25px;
             padding: 15px;
             background: #f8fafc;
-            border-radius: 8px;
+            border-radius: 12px;
         }
         
-        .remarks-section {
-            margin: 15px 0;
+        .remarks-box {
+            margin-bottom: 25px;
             padding: 15px;
             background: #f8fafc;
-            border-radius: 8px;
+            border-radius: 12px;
         }
         
-        .signature-section {
+        .signature-row {
             display: flex;
             justify-content: space-between;
-            margin-top: 20px;
-            padding-top: 15px;
+            margin-top: 25px;
+            padding-top: 20px;
             border-top: 1px solid #e2e8f0;
         }
         
@@ -278,7 +282,7 @@
         
         .loading {
             text-align: center;
-            padding: 40px;
+            padding: 60px;
             color: #64748b;
         }
         
@@ -308,7 +312,8 @@
         
         @media (max-width: 768px) {
             .header { flex-direction: column; text-align: center; }
-            .student-info, .attendance-section, .conduct-interest { grid-template-columns: 1fr; }
+            .student-info, .dates-row, .attendance-row, .conduct-row { grid-template-columns: 1fr; }
+            .dev-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -330,7 +335,7 @@
         </div>
         
         <div class="form-card">
-            <h2>🔍 Access Child's Report Card</h2>
+            <h2>🔍 Access Child's Full Report Card</h2>
             
             <div id="errorMsg" class="error-message"></div>
             
@@ -360,7 +365,7 @@
                 </div>
             </div>
             
-            <button class="btn" onclick="fetchStudentReport()">📄 View Complete Report Card</button>
+            <button class="btn" onclick="fetchFullReport()">📄 View Full Report Card</button>
         </div>
         
         <div id="reportContainer"></div>
@@ -369,42 +374,36 @@
     <script>
         const API_URL = '';
         let parentToken = null;
-        let parent = null;
         
-        // Check parent login
         parentToken = localStorage.getItem('parentToken');
         if (!parentToken) {
             window.location.href = 'parent-login.html';
         }
         
-        parent = JSON.parse(localStorage.getItem('parent') || '{}');
+        const parent = JSON.parse(localStorage.getItem('parent') || '{}');
         document.getElementById('parentName').innerText = parent.name || 'Parent';
         document.getElementById('welcomeName').innerText = parent.name || 'Parent';
         
-        // Load school settings
-        let schoolSettings = {};
-        
-        async function loadSchoolSettings() {
-            try {
-                const response = await fetch(API_URL + '/api/settings');
-                schoolSettings = await response.json();
-            } catch (error) {
-                console.error('Error loading settings:', error);
-            }
+        function getClassName(classLevel) {
+            const classes = {
+                'KG1': 'KG 1', 'KG2': 'KG 2',
+                'P1': 'Primary 1', 'P2': 'Primary 2', 'P3': 'Primary 3',
+                'P4': 'Primary 4', 'P5': 'Primary 5', 'P6': 'Primary 6',
+                'JHS1': 'JHS 1', 'JHS2': 'JHS 2', 'JHS3': 'JHS 3'
+            };
+            return classes[classLevel] || classLevel;
         }
         
-        function getPersonalDevTraits(classLevel) {
-            if (classLevel === 'KG1' || classLevel === 'KG2') {
-                return ['Leadership Ability', 'Basic Life Skills', 'Neatness', 'Sociability', 'Creativity & Initiative', 'Dependability', 'Recreation Work'];
-            } else if (classLevel === 'P1' || classLevel === 'P2' || classLevel === 'P3' ||
-                       classLevel === 'P4' || classLevel === 'P5' || classLevel === 'P6') {
-                return ['Leadership Ability', 'Basic Life Skills', 'Neatness', 'Sociability', 'Creativity & Initiative', 'Dependability', 'Recreation Work', 'Work Habits'];
-            } else {
-                return ['Basic Life Skills', 'Social Development Skills', 'Outdoor Activity', 'Work Habits'];
-            }
+        function getGradeInfo(score, settings) {
+            if (score >= 80) return { grade: 'A', remark: settings.grade_a_remark || 'Excellent' };
+            if (score >= 70) return { grade: 'B', remark: settings.grade_b_remark || 'Very Good' };
+            if (score >= 60) return { grade: 'C', remark: settings.grade_c_remark || 'Good' };
+            if (score >= 50) return { grade: 'D', remark: settings.grade_d_remark || 'Satisfactory' };
+            if (score >= 40) return { grade: 'E', remark: settings.grade_e_remark || 'Weak' };
+            return { grade: 'F', remark: settings.grade_f_remark || 'Fail' };
         }
         
-        async function fetchStudentReport() {
+        async function fetchFullReport() {
             const studentId = document.getElementById('studentId').value.trim();
             const studentName = document.getElementById('studentName').value.trim();
             const term = document.getElementById('termSelect').value;
@@ -419,19 +418,17 @@
                 return;
             }
             
-            document.getElementById('reportContainer').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading report card...</p></div>';
+            document.getElementById('reportContainer').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading full report card...</p></div>';
             
             try {
-                await loadSchoolSettings();
-                
-                const response = await fetch(API_URL + `/api/parent/student-report?student_id=${encodeURIComponent(studentId)}&student_name=${encodeURIComponent(studentName)}&term=${term}&academic_year=${academicYear}`, {
+                const response = await fetch(API_URL + `/api/parent/full-report?student_id=${encodeURIComponent(studentId)}&student_name=${encodeURIComponent(studentName)}&term=${term}&academic_year=${academicYear}`, {
                     headers: { 'Authorization': `Bearer ${parentToken}` }
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    renderCompleteReportCard(data, term, academicYear);
+                    renderFullReportCard(data, term, academicYear);
                 } else {
                     errorMsg.innerText = data.message || 'Student not found. Please check the Student ID and Name.';
                     errorMsg.style.display = 'block';
@@ -445,68 +442,55 @@
             }
         }
         
-        function renderCompleteReportCard(data, term, academicYear) {
+        function renderFullReportCard(data, term, academicYear) {
             const student = data.student;
             const subjects = data.subjects;
             const sbaMarks = data.sbaMarks;
             const reportData = data.reportData || {};
+            const settings = data.settings || {};
+            const personalDevTraits = data.personalDevTraits || [];
+            const subjectPositions = data.subjectPositions || {};
+            const overallPosition = data.overallPosition || 0;
+            const totalStudents = data.totalStudents || 0;
             
             const termText = term === '1' ? 'First Term' : (term === '2' ? 'Second Term' : 'Third Term');
             const className = getClassName(student.class_level);
-            const personalDevTraits = getPersonalDevTraits(student.class_level);
             
-            function getClassName(classLevel) {
-                const classes = {
-                    'KG1': 'KG 1', 'KG2': 'KG 2',
-                    'P1': 'Primary 1', 'P2': 'Primary 2', 'P3': 'Primary 3',
-                    'P4': 'Primary 4', 'P5': 'Primary 5', 'P6': 'Primary 6',
-                    'JHS1': 'JHS 1', 'JHS2': 'JHS 2', 'JHS3': 'JHS 3'
-                };
-                return classes[classLevel] || classLevel;
+            // Calculate average
+            let totalScore = 0;
+            let subjectCount = 0;
+            for (const subject of subjects) {
+                const mark = sbaMarks.find(m => m.subject_id === subject.id);
+                if (mark && mark.total) {
+                    totalScore += parseFloat(mark.total);
+                    subjectCount++;
+                }
             }
+            const average = subjectCount > 0 ? (totalScore / subjectCount).toFixed(1) : 0;
+            const overallGradeInfo = getGradeInfo(parseFloat(average), settings);
             
             // Build subjects table
             let subjectsHtml = '';
-            let totalScore = 0;
-            let subjectCount = 0;
-            
             for (const subject of subjects) {
                 const mark = sbaMarks.find(m => m.subject_id === subject.id);
                 const classScore = mark ? (parseFloat(mark.class_score) || 0) : 0;
                 const examScore = mark ? (parseFloat(mark.exam_score) || 0) : 0;
                 const total = mark ? (parseFloat(mark.total) || 0) : 0;
-                totalScore += total;
-                subjectCount++;
-                
-                let grade = '';
-                let gradeRemark = '';
-                if (total >= 80) { grade = 'A'; gradeRemark = schoolSettings.grade_a_remark || 'Excellent'; }
-                else if (total >= 70) { grade = 'B'; gradeRemark = schoolSettings.grade_b_remark || 'Very Good'; }
-                else if (total >= 60) { grade = 'C'; gradeRemark = schoolSettings.grade_c_remark || 'Good'; }
-                else if (total >= 50) { grade = 'D'; gradeRemark = schoolSettings.grade_d_remark || 'Satisfactory'; }
-                else if (total >= 40) { grade = 'E'; gradeRemark = schoolSettings.grade_e_remark || 'Weak'; }
-                else { grade = 'F'; gradeRemark = schoolSettings.grade_f_remark || 'Fail'; }
+                const gradeInfo = getGradeInfo(total, settings);
+                const position = subjectPositions[subject.id] || 0;
                 
                 subjectsHtml += `
                     <tr>
-                        <td>${escapeHtml(subject.name)}</span></td>
-                        <td>${classScore.toFixed(1)}%</span></td>
-                        <td>${examScore.toFixed(1)}%</span></td>
-                        <td><strong>${total.toFixed(1)}%</strong></span></td>
-                        <td><strong class="grade-${grade}">${grade}</strong></span></td>
-                        <td>${gradeRemark}</span></span></td>
+                        <td style="text-align: left;"><strong>${escapeHtml(subject.name)}</strong></td>
+                        <td>${classScore.toFixed(1)}%</td>
+                        <td>${examScore.toFixed(1)}%</td>
+                        <td><strong>${total.toFixed(1)}%</strong></td>
+                        <td><strong class="grade-${gradeInfo.grade}">${gradeInfo.grade}</strong></td>
+                        <td>${position}${getOrdinal(position)}</td>
+                        <td>${gradeInfo.remark}</td>
                     </tr>
                 `;
             }
-            
-            const average = subjectCount > 0 ? (totalScore / subjectCount).toFixed(1) : 0;
-            let overallGrade = '';
-            if (average >= 80) overallGrade = 'A';
-            else if (average >= 70) overallGrade = 'B';
-            else if (average >= 60) overallGrade = 'C';
-            else if (average >= 50) overallGrade = 'D';
-            else if (average >= 40) overallGrade = 'E';
-            else overallGrade = 'F';
             
             // Personal Development
             let devHtml = '';
@@ -515,29 +499,20 @@
                 devHtml += `<div class="dev-item"><span>${personalDevTraits[i]}:</span><span><strong>${grade}</strong></span></div>`;
             }
             
-            // Attendance and other data
-            const attendancePresent = reportData.attendance_present || '___';
-            const attendanceTotal = reportData.attendance_total || '___';
-            const promotedTo = reportData.promoted_to || '_____________';
-            const conduct = reportData.conduct || '_____________';
-            const interest = reportData.interest || '_____________';
-            const teacherRemarks = reportData.teacher_remarks || '_________________________________';
-            const headteacherRemarks = reportData.headteacher_remarks || '_________________________________';
-            
             // Logo display
-            const logoDisplay = schoolSettings.logo_url && (schoolSettings.logo_url.startsWith('http') || schoolSettings.logo_url.startsWith('/')) 
-                ? `<img src="${schoolSettings.logo_url}" style="max-height: 60px; margin-bottom: 10px;">` 
-                : `<div style="font-size: 40px;">${schoolSettings.logo_url || '🏫'}</div>`;
+            const logoDisplay = settings.logo_url && (settings.logo_url.startsWith('http') || settings.logo_url.startsWith('/')) 
+                ? `<img src="${settings.logo_url}" style="max-height: 60px; margin-bottom: 10px;">` 
+                : `<div style="font-size: 40px;">${settings.logo_url || '🏫'}</div>`;
             
             const reportHtml = `
                 <div class="report-card">
                     <div class="report-header">
                         ${logoDisplay}
-                        <h1>${escapeHtml(schoolSettings.school_name || 'Living Spring Adventist Academy')}</h1>
+                        <h1>${escapeHtml(settings.school_name || 'Living Spring Adventist Academy')}</h1>
                         <h2>END OF ${termText.toUpperCase()} REPORT CARD</h2>
-                        <div class="school-address">${escapeHtml(schoolSettings.school_address || 'P.O. Box 123, Accra - Ghana')}</div>
-                        <div class="school-address">📧 ${schoolSettings.school_email || 'info@livingspring.edu.gh'} | 📞 ${schoolSettings.school_phone || '+233 XX XXX XXXX'}</div>
-                        <div class="school-address">Motto: ${escapeHtml(schoolSettings.school_motto || 'Excellence in Education')}</div>
+                        <div class="school-address">${escapeHtml(settings.school_address || 'P.O. Box 123, Accra - Ghana')}</div>
+                        <div class="school-address">📧 ${settings.school_email || 'info@livingspring.edu.gh'} | 📞 ${settings.school_phone || '+233 XX XXX XXXX'}</div>
+                        <div class="school-address">Motto: ${escapeHtml(settings.school_motto || 'Excellence in Education')}</div>
                     </div>
                     
                     <div class="student-info">
@@ -545,14 +520,14 @@
                         <div><span class="info-label">Student ID:</span> ${student.student_id}</div>
                         <div><span class="info-label">Class:</span> ${className}</div>
                         <div><span class="info-label">House:</span> ${student.house || 'Not Assigned'}</div>
-                        <div><span class="info-label">Academic Year:</span> ${academicYear}</div>
-                        <div><span class="info-label">Term:</span> ${termText}</div>
+                        <div><span class="info-label">Number on Roll:</span> ${totalStudents}</div>
+                        <div><span class="info-label">Overall Position:</span> ${overallPosition} out of ${totalStudents}</div>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; padding: 12px; background: #f8fafc; border-radius: 8px;">
-                        <div><span class="info-label">Term Begins:</span> ${schoolSettings.term_begins || '_____________'}</div>
-                        <div><span class="info-label">Term Ends:</span> ${schoolSettings.term_ends || '_____________'}</div>
-                        <div><span class="info-label">Next Term Reopens:</span> ${schoolSettings.next_term_reopens || '_____________'}</div>
+                    <div class="dates-row">
+                        <div><span class="info-label">Term Begins:</span> ${settings.term_begins || '_____________'}</div>
+                        <div><span class="info-label">Term Ends:</span> ${settings.term_ends || '_____________'}</div>
+                        <div><span class="info-label">Next Term Reopens:</span> ${settings.next_term_reopens || '_____________'}</div>
                     </div>
                     
                     <table class="subjects-table">
@@ -563,6 +538,7 @@
                                 <th>Exam Score (50%)</th>
                                 <th>Total (100%)</th>
                                 <th>Grade</th>
+                                <th>Position</th>
                                 <th>Remarks</th>
                             </tr>
                         </thead>
@@ -570,9 +546,9 @@
                             ${subjectsHtml}
                             <tr class="total-row">
                                 <td colspan="3"><strong>Overall Average</strong></td>
-                                <td><strong>${average}%</strong></span></td>
-                                <td><strong>${overallGrade}</strong></span></td>
-                                <td>—</span></td>
+                                <td><strong>${average}%</strong></td>
+                                <td><strong>${overallGradeInfo.grade}</strong></td>
+                                <td colspan="2">—</td>
                             </tr>
                         </tbody>
                     </table>
@@ -584,22 +560,23 @@
                         </div>
                     </div>
                     
-                    <div class="attendance-section">
-                        <div><span class="info-label">Total Attendance:</span> ${attendancePresent} out of ${attendanceTotal} days</div>
-                        <div><span class="info-label">Promoted to:</span> ${escapeHtml(promotedTo)}</div>
+                    <div class="attendance-row">
+                        <div><span class="info-label">Total Attendance:</span> ${reportData.attendance_present || '___'} out of ${reportData.attendance_total || '___'} days</div>
+                        <div><span class="info-label">Promoted to:</span> ${escapeHtml(reportData.promoted_to || '_____________')}</div>
+                        <div><span class="info-label">Academic Year:</span> ${academicYear}</div>
                     </div>
                     
-                    <div class="conduct-interest">
-                        <div><span class="info-label">Conduct:</span> ${escapeHtml(conduct)}</div>
-                        <div><span class="info-label">Interest:</span> ${escapeHtml(interest)}</div>
+                    <div class="conduct-row">
+                        <div><span class="info-label">Conduct:</span> ${escapeHtml(reportData.conduct || '_____________')}</div>
+                        <div><span class="info-label">Interest:</span> ${escapeHtml(reportData.interest || '_____________')}</div>
                     </div>
                     
-                    <div class="remarks-section">
-                        <div><span class="info-label">Class Teacher's Remarks:</span> ${escapeHtml(teacherRemarks)}</div>
-                        <div style="margin-top:10px;"><span class="info-label">Headteacher's Remarks:</span> ${escapeHtml(headteacherRemarks)}</div>
+                    <div class="remarks-box">
+                        <div><span class="info-label">Class Teacher's Remarks:</span> ${escapeHtml(reportData.teacher_remarks || '_________________________________')}</div>
+                        <div style="margin-top: 10px;"><span class="info-label">Headteacher's Remarks:</span> ${escapeHtml(reportData.headteacher_remarks || '_________________________________')}</div>
                     </div>
                     
-                    <div class="signature-section">
+                    <div class="signature-row">
                         <div>
                             <p>Class Teacher's Signature: ___________________</p>
                             <p>Date: ___________</p>
@@ -622,6 +599,13 @@
             document.getElementById('reportContainer').innerHTML = reportHtml;
         }
         
+        function getOrdinal(n) {
+            if (n === 1) return 'st';
+            if (n === 2) return 'nd';
+            if (n === 3) return 'rd';
+            return 'th';
+        }
+        
         function logout() {
             localStorage.removeItem('parentToken');
             localStorage.removeItem('parent');
@@ -637,9 +621,6 @@
                 return m;
             });
         }
-        
-        // Initialize
-        loadSchoolSettings();
     </script>
 </body>
 </html>
