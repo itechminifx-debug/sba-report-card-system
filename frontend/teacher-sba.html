@@ -356,29 +356,6 @@
             return { grade: 'F', remark: 'Fail' };
         }
         
-        function calculateAndDisplayTotals(rowId) {
-            const test1 = parseFloat(document.getElementById(`test1_${rowId}`)?.value) || 0;
-            const groupWork = parseFloat(document.getElementById(`group_${rowId}`)?.value) || 0;
-            const midTerm = parseFloat(document.getElementById(`mid_${rowId}`)?.value) || 0;
-            const project = parseFloat(document.getElementById(`project_${rowId}`)?.value) || 0;
-            const exam = parseFloat(document.getElementById(`exam_${rowId}`)?.value) || 0;
-            
-            const subTotal = test1 + groupWork + midTerm + project;
-            const classScore = (subTotal / 60) * 50;
-            const examScore = (exam / 100) * 50;
-            const total = classScore + examScore;
-            const gradeInfo = getGrade(total);
-            
-            document.getElementById(`subtotal_${rowId}`).innerHTML = `<strong>${Math.round(subTotal * 100) / 100}</strong>`;
-            document.getElementById(`classScore_${rowId}`).innerHTML = `<strong>${Math.round(classScore * 100) / 100}</strong>`;
-            document.getElementById(`examScore_${rowId}`).innerHTML = `<strong>${Math.round(examScore * 100) / 100}</strong>`;
-            document.getElementById(`total_${rowId}`).innerHTML = `<strong>${Math.round(total * 100) / 100}</strong>`;
-            document.getElementById(`grade_${rowId}`).innerHTML = `<strong>${gradeInfo.grade}</strong>`;
-            document.getElementById(`remarks_${rowId}`).innerHTML = gradeInfo.remark;
-            
-            return { test1, groupWork, midTerm, project, exam, subTotal, classScore, examScore, total, grade: gradeInfo.grade, remark: gradeInfo.remark };
-        }
-        
         // Load subjects for the selected class
         async function loadSubjects() {
             try {
@@ -441,8 +418,7 @@
                     return;
                 }
                 
-                // Load existing marks for this subject, term, year
-                console.log('Loading existing marks for subject:', subjectId, 'term:', term);
+                // Load existing marks
                 const marksRes = await fetch(API_URL + `/api/sba?subject_id=${subjectId}&term=${term}&academic_year=${academicYear}`);
                 const existingMarks = await marksRes.json();
                 console.log('Existing marks loaded:', existingMarks);
@@ -488,21 +464,34 @@
                 const existing = marksData[student.id] || {};
                 const rowId = student.id;
                 
+                // Calculate totals
+                const test1 = existing.test1 || 0;
+                const groupWork = existing.group_work || 0;
+                const midTerm = existing.mid_term || 0;
+                const project = existing.project || 0;
+                const exam = existing.exam || 0;
+                
+                const subTotal = test1 + groupWork + midTerm + project;
+                const classScore = (subTotal / 60) * 50;
+                const examScore = (exam / 100) * 50;
+                const total = classScore + examScore;
+                const gradeInfo = getGrade(total);
+                
                 html += `
-                    <tr data-student-id="${student.id}">
+                    <tr data-student-id="${student.id}" id="row_${rowId}">
                         <td><strong>${escapeHtml(student.name)}</strong></td>
-                        <td><input type="number" id="test1_${rowId}" value="${existing.test1 || 0}" min="0" max="15" step="0.5" onchange="calculateAndDisplayTotals(${rowId})"></td>
-                        <td><input type="number" id="group_${rowId}" value="${existing.group_work || 0}" min="0" max="15" step="0.5" onchange="calculateAndDisplayTotals(${rowId})"></td>
-                        <td><input type="number" id="mid_${rowId}" value="${existing.mid_term || 0}" min="0" max="15" step="0.5" onchange="calculateAndDisplayTotals(${rowId})"></td>
-                        <td><input type="number" id="project_${rowId}" value="${existing.project || 0}" min="0" max="15" step="0.5" onchange="calculateAndDisplayTotals(${rowId})"></td>
-                        <td class="total-cell" id="subtotal_${rowId}">${existing.sub_total || 0}</td>
-                        <td class="total-cell" id="classScore_${rowId}">${existing.class_score || 0}</td>
-                        <td><input type="number" id="exam_${rowId}" value="${existing.exam || 0}" min="0" max="100" step="0.5" onchange="calculateAndDisplayTotals(${rowId})"></td>
-                        <td class="total-cell" id="examScore_${rowId}">${existing.exam_score || 0}</td>
-                        <td class="total-cell" id="total_${rowId}">${existing.total || 0}</td>
-                        <td class="grade-cell" id="grade_${rowId}">${existing.grade || '-'}</td>
-                        <td id="remarks_${rowId}">${existing.remarks || '-'}</td>
-                    </table>
+                        <td><input type="number" id="test1_${rowId}" value="${test1}" min="0" max="15" step="0.5" onchange="updateTotals(${rowId})"></td>
+                        <td><input type="number" id="group_${rowId}" value="${groupWork}" min="0" max="15" step="0.5" onchange="updateTotals(${rowId})"></td>
+                        <td><input type="number" id="mid_${rowId}" value="${midTerm}" min="0" max="15" step="0.5" onchange="updateTotals(${rowId})"></td>
+                        <td><input type="number" id="project_${rowId}" value="${project}" min="0" max="15" step="0.5" onchange="updateTotals(${rowId})"></td>
+                        <td class="total-cell" id="subtotal_${rowId}">${Math.round(subTotal * 100) / 100}</td>
+                        <td class="total-cell" id="classScore_${rowId}">${Math.round(classScore * 100) / 100}</td>
+                        <td><input type="number" id="exam_${rowId}" value="${exam}" min="0" max="100" step="0.5" onchange="updateTotals(${rowId})"></td>
+                        <td class="total-cell" id="examScore_${rowId}">${Math.round(examScore * 100) / 100}</td>
+                        <td class="total-cell" id="total_${rowId}">${Math.round(total * 100) / 100}</td>
+                        <td class="grade-cell" id="grade_${rowId}"><strong>${gradeInfo.grade}</strong></td>
+                        <td id="remarks_${rowId}">${gradeInfo.remark}</td>
+                    </tr>
                 `;
             }
             
@@ -513,10 +502,34 @@
             `;
             
             document.getElementById('marksTableContainer').innerHTML = html;
+        }
+        
+        function updateTotals(rowId) {
+            const test1 = parseFloat(document.getElementById(`test1_${rowId}`)?.value) || 0;
+            const groupWork = parseFloat(document.getElementById(`group_${rowId}`)?.value) || 0;
+            const midTerm = parseFloat(document.getElementById(`mid_${rowId}`)?.value) || 0;
+            const project = parseFloat(document.getElementById(`project_${rowId}`)?.value) || 0;
+            const exam = parseFloat(document.getElementById(`exam_${rowId}`)?.value) || 0;
             
-            for (const student of students) {
-                calculateAndDisplayTotals(student.id);
-            }
+            const subTotal = test1 + groupWork + midTerm + project;
+            const classScore = (subTotal / 60) * 50;
+            const examScore = (exam / 100) * 50;
+            const total = classScore + examScore;
+            const gradeInfo = getGrade(total);
+            
+            const subtotalElem = document.getElementById(`subtotal_${rowId}`);
+            const classScoreElem = document.getElementById(`classScore_${rowId}`);
+            const examScoreElem = document.getElementById(`examScore_${rowId}`);
+            const totalElem = document.getElementById(`total_${rowId}`);
+            const gradeElem = document.getElementById(`grade_${rowId}`);
+            const remarksElem = document.getElementById(`remarks_${rowId}`);
+            
+            if (subtotalElem) subtotalElem.innerHTML = Math.round(subTotal * 100) / 100;
+            if (classScoreElem) classScoreElem.innerHTML = Math.round(classScore * 100) / 100;
+            if (examScoreElem) examScoreElem.innerHTML = Math.round(examScore * 100) / 100;
+            if (totalElem) totalElem.innerHTML = Math.round(total * 100) / 100;
+            if (gradeElem) gradeElem.innerHTML = `<strong>${gradeInfo.grade}</strong>`;
+            if (remarksElem) remarksElem.innerHTML = gradeInfo.remark;
         }
         
         async function saveAllMarks() {
