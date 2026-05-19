@@ -70,11 +70,53 @@
             margin-bottom: 10px;
         }
         
+        .filter-bar {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-group label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #1e293b;
+            text-transform: uppercase;
+        }
+        
+        .filter-group select {
+            padding: 10px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 200px;
+        }
+        
+        .btn {
+            background: #10b981;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
         .children-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 25px;
-            margin-bottom: 30px;
         }
         
         .child-card {
@@ -163,6 +205,7 @@
         
         @media (max-width: 768px) {
             .header { flex-direction: column; text-align: center; }
+            .filter-bar { flex-direction: column; }
             .children-grid { grid-template-columns: 1fr; }
         }
     </style>
@@ -181,15 +224,35 @@
     <div class="container">
         <div class="welcome-card">
             <h1>Welcome, <span id="welcomeName">Parent</span>! 👨‍👩‍👧</h1>
-            <p>View your children's academic progress, report cards, and attendance</p>
+            <p>Select a child to view their academic report</p>
         </div>
         
-        <h2 style="margin-bottom: 20px;">👧 My Children</h2>
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label>Select Child</label>
+                <select id="childSelect" onchange="loadChildReport()">
+                    <option value="">-- Select Child --</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Term</label>
+                <select id="termSelect">
+                    <option value="1">Term 1</option>
+                    <option value="2">Term 2</option>
+                    <option value="3">Term 3</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Academic Year</label>
+                <input type="text" id="academicYear" value="2025/2026" style="width: 120px;">
+            </div>
+            <button class="btn" onclick="loadChildReport()">View Report</button>
+        </div>
         
-        <div id="childrenContainer">
+        <div id="reportContainer">
             <div class="loading">
                 <div class="spinner"></div>
-                <p>Loading your children's information...</p>
+                <p>Select a child to view their report card</p>
             </div>
         </div>
     </div>
@@ -200,6 +263,7 @@
         const API_URL = '';
         let parentToken = null;
         let parent = null;
+        let children = [];
         
         // Check parent login
         parentToken = localStorage.getItem('parentToken');
@@ -211,51 +275,26 @@
         document.getElementById('parentName').innerText = parent.name || 'Parent';
         document.getElementById('welcomeName').innerText = parent.name || 'Parent';
         
+        // Load children into dropdown
         async function loadChildren() {
             try {
                 const response = await fetch(API_URL + '/api/parent/children', {
                     headers: { 'Authorization': `Bearer ${parentToken}` }
                 });
-                const children = await response.json();
+                children = await response.json();
                 
-                const container = document.getElementById('childrenContainer');
-                
+                const childSelect = document.getElementById('childSelect');
                 if (children.length === 0) {
-                    container.innerHTML = '<div class="loading"><p>No children linked to your account. Please contact the school.</p></div>';
-                    return;
+                    childSelect.innerHTML = '<option value="">No children found</option>';
+                } else {
+                    let html = '<option value="">-- Select Child --</option>';
+                    children.forEach(child => {
+                        html += `<option value="${child.id}">${escapeHtml(child.name)} (${child.student_id}) - ${getClassName(child.class_level)}</option>`;
+                    });
+                    childSelect.innerHTML = html;
                 }
-                
-                let html = '<div class="children-grid">';
-                children.forEach(child => {
-                    html += `
-                        <div class="child-card" onclick="viewChildReport(${child.id})">
-                            <div class="child-header">
-                                <div class="child-name">${escapeHtml(child.name)}</div>
-                                <div class="child-class">${getClassName(child.class_level)}</div>
-                            </div>
-                            <div class="child-info">
-                                <div class="info-row">
-                                    <span class="info-label">Student ID:</span>
-                                    <span>${child.student_id}</span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">House:</span>
-                                    <span>${child.house || 'Not Assigned'}</span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">Gender:</span>
-                                    <span>${child.gender || 'Not Specified'}</span>
-                                </div>
-                                <button class="view-btn">View Full Report →</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                html += '</div>';
-                container.innerHTML = html;
             } catch (error) {
                 console.error('Error loading children:', error);
-                document.getElementById('childrenContainer').innerHTML = '<div class="loading"><p>Error loading children. Please try again.</p></div>';
             }
         }
         
@@ -269,9 +308,136 @@
             return classes[classLevel] || classLevel;
         }
         
-        function viewChildReport(childId) {
-            // Redirect to parent report card viewer
-            window.location.href = `parent-report.html?childId=${childId}`;
+        async function loadChildReport() {
+            const childId = document.getElementById('childSelect').value;
+            const term = document.getElementById('termSelect').value;
+            const academicYear = document.getElementById('academicYear').value;
+            
+            if (!childId) {
+                document.getElementById('reportContainer').innerHTML = '<div class="loading"><p>Please select a child</p></div>';
+                return;
+            }
+            
+            document.getElementById('reportContainer').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading report...</p></div>';
+            
+            try {
+                const response = await fetch(API_URL + `/api/parent/child/${childId}/report?term=${term}&academic_year=${academicYear}`, {
+                    headers: { 'Authorization': `Bearer ${parentToken}` }
+                });
+                const data = await response.json();
+                
+                renderReport(data, term, academicYear);
+            } catch (error) {
+                console.error('Error loading report:', error);
+                document.getElementById('reportContainer').innerHTML = '<div class="loading"><p>Error loading report. Please try again.</p></div>';
+            }
+        }
+        
+        function renderReport(data, term, academicYear) {
+            const student = data.student;
+            const subjects = data.subjects;
+            const sbaMarks = data.sbaMarks;
+            
+            const termText = term === '1' ? 'First Term' : (term === '2' ? 'Second Term' : 'Third Term');
+            const className = getClassName(student.class_level);
+            
+            // Calculate subject performance
+            let subjectsHtml = '';
+            let totalScore = 0;
+            let subjectCount = 0;
+            
+            for (const subject of subjects) {
+                const mark = sbaMarks.find(m => m.subject_id === subject.id);
+                const total = mark ? (parseFloat(mark.total) || 0) : 0;
+                totalScore += total;
+                subjectCount++;
+                
+                let grade = '';
+                let gradeRemark = '';
+                if (total >= 80) { grade = 'A'; gradeRemark = 'Excellent'; }
+                else if (total >= 70) { grade = 'B'; gradeRemark = 'Very Good'; }
+                else if (total >= 60) { grade = 'C'; gradeRemark = 'Good'; }
+                else if (total >= 50) { grade = 'D'; gradeRemark = 'Satisfactory'; }
+                else if (total >= 40) { grade = 'E'; gradeRemark = 'Weak'; }
+                else { grade = 'F'; gradeRemark = 'Fail'; }
+                
+                subjectsHtml += `
+                    <tr>
+                        <td>${escapeHtml(subject.name)}</td>
+                        <td><strong>${total.toFixed(1)}%</strong></td>
+                        <td><strong class="grade-${grade}">${grade}</strong></td>
+                        <td>${gradeRemark}</td>
+                    </tr>
+                `;
+            }
+            
+            const average = subjectCount > 0 ? (totalScore / subjectCount).toFixed(1) : 0;
+            let overallGrade = '';
+            if (average >= 80) overallGrade = 'A';
+            else if (average >= 70) overallGrade = 'B';
+            else if (average >= 60) overallGrade = 'C';
+            else if (average >= 50) overallGrade = 'D';
+            else if (average >= 40) overallGrade = 'E';
+            else overallGrade = 'F';
+            
+            const settings = {
+                name: localStorage.getItem('schoolName') || 'Living Spring Adventist Academy',
+                address: localStorage.getItem('schoolAddress') || 'P.O. Box 123, Accra - Ghana',
+                motto: localStorage.getItem('schoolMotto') || 'Excellence in Education'
+            };
+            
+            const reportHtml = `
+                <div class="report-card" style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <div style="text-align: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #10b981;">
+                        <h1 style="font-size: 22px; color: #1e293b;">${escapeHtml(settings.name)}</h1>
+                        <h2 style="font-size: 16px; color: #10b981;">END OF ${termText.toUpperCase()} REPORT CARD</h2>
+                        <div style="font-size: 11px; color: #64748b;">${escapeHtml(settings.address)}</div>
+                        <div style="font-size: 11px; color: #64748b;">Motto: ${escapeHtml(settings.motto)}</div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; padding: 12px; background: #f8fafc; border-radius: 8px; font-size: 13px;">
+                        <div><span style="font-weight: 600;">Student Name:</span> ${escapeHtml(student.name)}</div>
+                        <div><span style="font-weight: 600;">Student ID:</span> ${student.student_id}</div>
+                        <div><span style="font-weight: 600;">Class:</span> ${className}</div>
+                        <div><span style="font-weight: 600;">House:</span> ${student.house || 'Not Assigned'}</div>
+                        <div><span style="font-weight: 600;">Academic Year:</span> ${academicYear}</div>
+                        <div><span style="font-weight: 600;">Term:</span> ${termText}</div>
+                    </div>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
+                        <thead>
+                            <tr style="background: #10b981; color: white;">
+                                <th style="padding: 8px; text-align: left;">Subject</th>
+                                <th style="padding: 8px; text-align: center;">Score (%)</th>
+                                <th style="padding: 8px; text-align: center;">Grade</th>
+                                <th style="padding: 8px; text-align: left;">Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${subjectsHtml}
+                            <tr style="background: #f8fafc; font-weight: 600;">
+                                <td><strong>Overall Average</strong></td>
+                                <td style="text-align: center;"><strong>${average}%</strong></td>
+                                <td style="text-align: center;"><strong>${overallGrade}</strong></td>
+                                <td>—</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div style="margin-top: 20px; text-align: center; font-size: 10px; color: #64748b;">
+                        <p>Parent Portal - Generated on ${new Date().toLocaleDateString()}</p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('reportContainer').innerHTML = reportHtml;
+            
+            // Add print button
+            const printBtn = document.createElement('div');
+            printBtn.style.marginTop = '20px';
+            printBtn.style.textAlign = 'right';
+            printBtn.innerHTML = '<button class="btn" onclick="window.print()">🖨️ Print Report Card</button>';
+            document.getElementById('reportContainer').appendChild(printBtn);
         }
         
         function logout() {
@@ -290,6 +456,7 @@
             });
         }
         
+        // Initialize
         loadChildren();
     </script>
 </body>
