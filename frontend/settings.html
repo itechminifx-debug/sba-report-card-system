@@ -206,17 +206,10 @@
             display: block;
         }
         
-        .danger-zone {
-            background: #fef2f2;
-            border: 1px solid #fee2e2;
-            border-radius: 12px;
+        .loading {
+            text-align: center;
             padding: 20px;
-            margin-top: 20px;
-        }
-        
-        .danger-zone h3 {
-            color: #dc2626;
-            margin-bottom: 15px;
+            color: #64748b;
         }
         
         @media (max-width: 768px) {
@@ -247,7 +240,6 @@
                 <button class="tab-btn" onclick="showTab('academic')">📚 Academic</button>
                 <button class="tab-btn" onclick="showTab('grading')">📊 Grading</button>
                 <button class="tab-btn" onclick="showTab('signature')">✍️ Signature</button>
-                <button class="tab-btn" onclick="showTab('danger')">⚠️ Danger Zone</button>
             </div>
             
             <!-- General Tab -->
@@ -298,50 +290,40 @@
                         </select>
                     </div>
                 </div>
+                
+                <!-- Term Dates Section -->
                 <div class="form-row">
                     <div class="form-group">
                         <label>Term Begins Date</label>
                         <input type="date" id="termBegins">
+                        <small style="color: #64748b;">Format: YYYY-MM-DD</small>
                     </div>
                     <div class="form-group">
                         <label>Term Ends Date</label>
                         <input type="date" id="termEnds">
+                        <small style="color: #64748b;">Format: YYYY-MM-DD</small>
                     </div>
                     <div class="form-group">
                         <label>Next Term Reopens Date</label>
                         <input type="date" id="nextTermReopens">
+                        <small style="color: #64748b;">Format: YYYY-MM-DD</small>
                     </div>
                 </div>
+                
                 <hr>
                 <h3 style="margin-bottom: 15px; font-size: 16px;">Personal Development Traits</h3>
                 <div class="form-row">
                     <div class="form-group">
                         <label>KG Traits</label>
-                        <textarea id="kgTraits" rows="4" placeholder="One per line">Leadership Ability
-Basic Life Skills
-Neatness
-Sociability
-Creativity & Initiative
-Dependability
-Recreation Work</textarea>
+                        <textarea id="kgTraits" rows="4" placeholder="One per line"></textarea>
                     </div>
                     <div class="form-group">
                         <label>Primary Traits</label>
-                        <textarea id="primaryTraits" rows="4" placeholder="One per line">Leadership Ability
-Basic Life Skills
-Neatness
-Sociability
-Creativity & Initiative
-Dependability
-Recreation Work
-Work Habits</textarea>
+                        <textarea id="primaryTraits" rows="4" placeholder="One per line"></textarea>
                     </div>
                     <div class="form-group">
                         <label>JHS Traits</label>
-                        <textarea id="jhsTraits" rows="4" placeholder="One per line">Basic Life Skills
-Social Development Skills
-Outdoor Activity
-Work Habits</textarea>
+                        <textarea id="jhsTraits" rows="4" placeholder="One per line"></textarea>
                     </div>
                 </div>
             </div>
@@ -406,24 +388,10 @@ Work Habits</textarea>
                 </div>
             </div>
             
-            <!-- Danger Zone Tab -->
-            <div id="tab-danger" class="tab-pane">
-                <div class="danger-zone">
-                    <h3>⚠️ Danger Zone</h3>
-                    <p style="margin-bottom: 15px;">These actions cannot be undone. Please be careful.</p>
-                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                        <button class="btn btn-danger" onclick="resetAllSettings()">Reset All Settings</button>
-                        <button class="btn btn-danger" onclick="clearAllData()">Delete All Data</button>
-                        <button class="btn btn-danger" onclick="exportBackup()">Export Backup</button>
-                        <button class="btn btn-primary" onclick="importBackup()">Import Backup</button>
-                    </div>
-                </div>
-            </div>
-            
             <hr>
             <div style="display: flex; gap: 15px; justify-content: flex-end; margin-top: 20px;">
                 <button class="btn btn-primary" onclick="saveAllSettings()">💾 Save All Settings</button>
-                <button class="btn btn-danger" onclick="resetToDefault()">↺ Reset to Default</button>
+                <button class="btn" onclick="loadAllSettings()">↺ Refresh</button>
             </div>
         </div>
     </div>
@@ -431,6 +399,8 @@ Work Habits</textarea>
     <div class="toast" id="toast"></div>
 
     <script>
+        const API_URL = '';
+        
         // Check login
         const token = localStorage.getItem('token');
         if (!token) {
@@ -449,7 +419,7 @@ Work Habits</textarea>
                 document.querySelectorAll('.tab-btn')[0].classList.add('active');
                 document.getElementById('tab-general').classList.add('active');
             } else if (tabName === 'academic') {
-                document.querySelectorAll('.tab-btn')[1].class.classList.add('active');
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
                 document.getElementById('tab-academic').classList.add('active');
             } else if (tabName === 'grading') {
                 document.querySelectorAll('.tab-btn')[2].classList.add('active');
@@ -457,9 +427,6 @@ Work Habits</textarea>
             } else if (tabName === 'signature') {
                 document.querySelectorAll('.tab-btn')[3].classList.add('active');
                 document.getElementById('tab-signature').classList.add('active');
-            } else if (tabName === 'danger') {
-                document.querySelectorAll('.tab-btn')[4].classList.add('active');
-                document.getElementById('tab-danger').classList.add('active');
             }
         }
         
@@ -487,245 +454,135 @@ Work Habits</textarea>
             }
         }
         
-        // Load all settings from localStorage
-        function loadAllSettings() {
-            // General
-            document.getElementById('schoolName').value = localStorage.getItem('schoolName') || 'Living Spring Adventist Academy';
-            document.getElementById('schoolAddress').value = localStorage.getItem('schoolAddress') || 'P.O. Box 123, Accra - Ghana';
-            document.getElementById('schoolEmail').value = localStorage.getItem('schoolEmail') || 'info@livingspring.edu.gh';
-            document.getElementById('schoolPhone').value = localStorage.getItem('schoolPhone') || '+233 XX XXX XXXX';
-            document.getElementById('schoolMotto').value = localStorage.getItem('schoolMotto') || 'Excellence in Education';
-            document.getElementById('logoUrl').value = localStorage.getItem('logoUrl') || '🏫';
-            updateLogoPreview();
+        // Load all settings from database
+        async function loadAllSettings() {
+            document.getElementById('toast').style.display = 'none';
             
-            // Academic
-            document.getElementById('academicYear').value = localStorage.getItem('academicYear') || '2025/2026';
-            document.getElementById('currentTerm').value = localStorage.getItem('currentTerm') || '1';
-            document.getElementById('termBegins').value = localStorage.getItem('termBegins') || '';
-            document.getElementById('termEnds').value = localStorage.getItem('termEnds') || '';
-            document.getElementById('nextTermReopens').value = localStorage.getItem('nextTermReopens') || '';
-            document.getElementById('kgTraits').value = localStorage.getItem('kgTraits') || `Leadership Ability\nBasic Life Skills\nNeatness\nSociability\nCreativity & Initiative\nDependability\nRecreation Work`;
-            document.getElementById('primaryTraits').value = localStorage.getItem('primaryTraits') || `Leadership Ability\nBasic Life Skills\nNeatness\nSociability\nCreativity & Initiative\nDependability\nRecreation Work\nWork Habits`;
-            document.getElementById('jhsTraits').value = localStorage.getItem('jhsTraits') || `Basic Life Skills\nSocial Development Skills\nOutdoor Activity\nWork Habits`;
-            
-            // Grading
-            document.getElementById('gradeARemark').value = localStorage.getItem('gradeARemark') || 'Excellent';
-            document.getElementById('gradeBRemark').value = localStorage.getItem('gradeBRemark') || 'Very Good';
-            document.getElementById('gradeCRemark').value = localStorage.getItem('gradeCRemark') || 'Good';
-            document.getElementById('gradeDRemark').value = localStorage.getItem('gradeDRemark') || 'Satisfactory';
-            document.getElementById('gradeERemark').value = localStorage.getItem('gradeERemark') || 'Weak';
-            document.getElementById('gradeFRemark').value = localStorage.getItem('gradeFRemark') || 'Fail';
-            document.getElementById('conductOptions').value = localStorage.getItem('conductOptions') || 'Excellent,Very Good,Good,Fair,Poor';
-            document.getElementById('interestOptions').value = localStorage.getItem('interestOptions') || 'Very Interested,Interested,Fairly Interested,Not Interested';
-            
-            // Signature
-            document.getElementById('headteacherName').value = localStorage.getItem('headteacherName') || 'Dr. James Wilson';
-            document.getElementById('signatureUrl').value = localStorage.getItem('signatureUrl') || '';
-            document.getElementById('teacherTitle').value = localStorage.getItem('teacherTitle') || 'Class Teacher';
-            updateSignaturePreview();
-        }
-        
-        function saveAllSettings() {
-            // General
-            localStorage.setItem('schoolName', document.getElementById('schoolName').value);
-            localStorage.setItem('schoolAddress', document.getElementById('schoolAddress').value);
-            localStorage.setItem('schoolEmail', document.getElementById('schoolEmail').value);
-            localStorage.setItem('schoolPhone', document.getElementById('schoolPhone').value);
-            localStorage.setItem('schoolMotto', document.getElementById('schoolMotto').value);
-            localStorage.setItem('logoUrl', document.getElementById('logoUrl').value);
-            
-            // Academic
-            localStorage.setItem('academicYear', document.getElementById('academicYear').value);
-            localStorage.setItem('currentTerm', document.getElementById('currentTerm').value);
-            localStorage.setItem('termBegins', document.getElementById('termBegins').value);
-            localStorage.setItem('termEnds', document.getElementById('termEnds').value);
-            localStorage.setItem('nextTermReopens', document.getElementById('nextTermReopens').value);
-            localStorage.setItem('kgTraits', document.getElementById('kgTraits').value);
-            localStorage.setItem('primaryTraits', document.getElementById('primaryTraits').value);
-            localStorage.setItem('jhsTraits', document.getElementById('jhsTraits').value);
-            
-            // Grading
-            localStorage.setItem('gradeARemark', document.getElementById('gradeARemark').value);
-            localStorage.setItem('gradeBRemark', document.getElementById('gradeBRemark').value);
-            localStorage.setItem('gradeCRemark', document.getElementById('gradeCRemark').value);
-            localStorage.setItem('gradeDRemark', document.getElementById('gradeDRemark').value);
-            localStorage.setItem('gradeERemark', document.getElementById('gradeERemark').value);
-            localStorage.setItem('gradeFRemark', document.getElementById('gradeFRemark').value);
-            localStorage.setItem('conductOptions', document.getElementById('conductOptions').value);
-            localStorage.setItem('interestOptions', document.getElementById('interestOptions').value);
-            
-            // Signature
-            localStorage.setItem('headteacherName', document.getElementById('headteacherName').value);
-            localStorage.setItem('signatureUrl', document.getElementById('signatureUrl').value);
-            localStorage.setItem('teacherTitle', document.getElementById('teacherTitle').value);
-            
-            showToast('✅ All settings saved successfully!');
-        }
-        
-        function resetToDefault() {
-            if (confirm('Reset all settings to default values?')) {
-                localStorage.removeItem('schoolName');
-                localStorage.removeItem('schoolAddress');
-                localStorage.removeItem('schoolEmail');
-                localStorage.removeItem('schoolPhone');
-                localStorage.removeItem('schoolMotto');
-                localStorage.removeItem('logoUrl');
-                localStorage.removeItem('academicYear');
-                localStorage.removeItem('currentTerm');
-                localStorage.removeItem('termBegins');
-                localStorage.removeItem('termEnds');
-                localStorage.removeItem('nextTermReopens');
-                localStorage.removeItem('kgTraits');
-                localStorage.removeItem('primaryTraits');
-                localStorage.removeItem('jhsTraits');
-                localStorage.removeItem('gradeARemark');
-                localStorage.removeItem('gradeBRemark');
-                localStorage.removeItem('gradeCRemark');
-                localStorage.removeItem('gradeDRemark');
-                localStorage.removeItem('gradeERemark');
-                localStorage.removeItem('gradeFRemark');
-                localStorage.removeItem('conductOptions');
-                localStorage.removeItem('interestOptions');
-                localStorage.removeItem('headteacherName');
-                localStorage.removeItem('signatureUrl');
-                localStorage.removeItem('teacherTitle');
-                loadAllSettings();
-                showToast('Settings reset to default');
+            try {
+                const response = await fetch(API_URL + '/api/settings');
+                const settings = await response.json();
+                
+                // General
+                document.getElementById('schoolName').value = settings.school_name || 'Living Spring Adventist Academy';
+                document.getElementById('schoolAddress').value = settings.school_address || 'P.O. Box 123, Accra - Ghana';
+                document.getElementById('schoolEmail').value = settings.school_email || 'info@livingspring.edu.gh';
+                document.getElementById('schoolPhone').value = settings.school_phone || '+233 XX XXX XXXX';
+                document.getElementById('schoolMotto').value = settings.school_motto || 'Excellence in Education';
+                document.getElementById('logoUrl').value = settings.logo_url || '🏫';
+                updateLogoPreview();
+                
+                // Academic
+                document.getElementById('academicYear').value = settings.academic_year || '2025/2026';
+                document.getElementById('currentTerm').value = settings.current_term || '1';
+                document.getElementById('termBegins').value = settings.term_begins || '';
+                document.getElementById('termEnds').value = settings.term_ends || '';
+                document.getElementById('nextTermReopens').value = settings.next_term_reopens || '';
+                document.getElementById('kgTraits').value = settings.kg_traits || `Leadership Ability\nBasic Life Skills\nNeatness\nSociability\nCreativity & Initiative\nDependability\nRecreation Work`;
+                document.getElementById('primaryTraits').value = settings.primary_traits || `Leadership Ability\nBasic Life Skills\nNeatness\nSociability\nCreativity & Initiative\nDependability\nRecreation Work\nWork Habits`;
+                document.getElementById('jhsTraits').value = settings.jhs_traits || `Basic Life Skills\nSocial Development Skills\nOutdoor Activity\nWork Habits`;
+                
+                // Grading
+                document.getElementById('gradeARemark').value = settings.grade_a_remark || 'Excellent';
+                document.getElementById('gradeBRemark').value = settings.grade_b_remark || 'Very Good';
+                document.getElementById('gradeCRemark').value = settings.grade_c_remark || 'Good';
+                document.getElementById('gradeDRemark').value = settings.grade_d_remark || 'Satisfactory';
+                document.getElementById('gradeERemark').value = settings.grade_e_remark || 'Weak';
+                document.getElementById('gradeFRemark').value = settings.grade_f_remark || 'Fail';
+                document.getElementById('conductOptions').value = settings.conduct_options || 'Excellent,Very Good,Good,Fair,Poor';
+                document.getElementById('interestOptions').value = settings.interest_options || 'Very Interested,Interested,Fairly Interested,Not Interested';
+                
+                // Signature
+                document.getElementById('headteacherName').value = settings.headteacher_name || 'Dr. James Wilson';
+                document.getElementById('signatureUrl').value = settings.signature_url || '';
+                document.getElementById('teacherTitle').value = settings.teacher_title || 'Class Teacher';
+                updateSignaturePreview();
+                
+                showToast('Settings loaded successfully!');
+            } catch (error) {
+                console.error('Error loading settings:', error);
+                showToast('Error loading settings', 'error');
             }
         }
         
-        function resetAllSettings() {
-            resetToDefault();
-        }
-        
-        function clearAllData() {
-            const confirmText = prompt('⚠️ DANGER: Type "DELETE ALL DATA" to confirm deleting ALL school data. This will delete students, marks, and all records. This CANNOT be undone!');
-            if (confirmText === 'DELETE ALL DATA') {
-                // Clear all school data from localStorage
-                localStorage.removeItem('students');
-                localStorage.removeItem('allCourses');
-                localStorage.removeItem('sba_marks');
-                localStorage.removeItem('userEnrollments');
-                localStorage.removeItem('personal_development');
-                localStorage.removeItem('report_card_data');
-                showToast('All data has been cleared. Refresh the page.', 'error');
-                setTimeout(() => {
-                    location.reload();
-                }, 2000);
-            } else {
-                showToast('Operation cancelled', 'error');
-            }
-        }
-        
-        function exportBackup() {
-            const backupData = {
-                schoolInfo: {
-                    name: localStorage.getItem('schoolName'),
-                    address: localStorage.getItem('schoolAddress'),
-                    email: localStorage.getItem('schoolEmail'),
-                    phone: localStorage.getItem('schoolPhone'),
-                    motto: localStorage.getItem('schoolMotto'),
-                    logoUrl: localStorage.getItem('logoUrl')
-                },
-                academic: {
-                    academicYear: localStorage.getItem('academicYear'),
-                    currentTerm: localStorage.getItem('currentTerm'),
-                    termBegins: localStorage.getItem('termBegins'),
-                    termEnds: localStorage.getItem('termEnds'),
-                    nextTermReopens: localStorage.getItem('nextTermReopens'),
-                    kgTraits: localStorage.getItem('kgTraits'),
-                    primaryTraits: localStorage.getItem('primaryTraits'),
-                    jhsTraits: localStorage.getItem('jhsTraits')
-                },
-                grading: {
-                    gradeARemark: localStorage.getItem('gradeARemark'),
-                    gradeBRemark: localStorage.getItem('gradeBRemark'),
-                    gradeCRemark: localStorage.getItem('gradeCRemark'),
-                    gradeDRemark: localStorage.getItem('gradeDRemark'),
-                    gradeERemark: localStorage.getItem('gradeERemark'),
-                    gradeFRemark: localStorage.getItem('gradeFRemark'),
-                    conductOptions: localStorage.getItem('conductOptions'),
-                    interestOptions: localStorage.getItem('interestOptions')
-                },
-                signature: {
-                    headteacherName: localStorage.getItem('headteacherName'),
-                    signatureUrl: localStorage.getItem('signatureUrl'),
-                    teacherTitle: localStorage.getItem('teacherTitle')
-                },
-                exportedAt: new Date().toISOString()
+        async function saveAllSettings() {
+            const settings = {
+                school_name: document.getElementById('schoolName').value,
+                school_address: document.getElementById('schoolAddress').value,
+                school_email: document.getElementById('schoolEmail').value,
+                school_phone: document.getElementById('schoolPhone').value,
+                school_motto: document.getElementById('schoolMotto').value,
+                logo_url: document.getElementById('logoUrl').value,
+                academic_year: document.getElementById('academicYear').value,
+                current_term: document.getElementById('currentTerm').value,
+                term_begins: document.getElementById('termBegins').value,
+                term_ends: document.getElementById('termEnds').value,
+                next_term_reopens: document.getElementById('nextTermReopens').value,
+                kg_traits: document.getElementById('kgTraits').value,
+                primary_traits: document.getElementById('primaryTraits').value,
+                jhs_traits: document.getElementById('jhsTraits').value,
+                grade_a_remark: document.getElementById('gradeARemark').value,
+                grade_b_remark: document.getElementById('gradeBRemark').value,
+                grade_c_remark: document.getElementById('gradeCRemark').value,
+                grade_d_remark: document.getElementById('gradeDRemark').value,
+                grade_e_remark: document.getElementById('gradeERemark').value,
+                grade_f_remark: document.getElementById('gradeFRemark').value,
+                conduct_options: document.getElementById('conductOptions').value,
+                interest_options: document.getElementById('interestOptions').value,
+                headteacher_name: document.getElementById('headteacherName').value,
+                signature_url: document.getElementById('signatureUrl').value,
+                teacher_title: document.getElementById('teacherTitle').value
             };
             
-            const dataStr = JSON.stringify(backupData, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `school_backup_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('Backup exported successfully!');
-        }
-        
-        function importBackup() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'application/json';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                const text = await file.text();
-                try {
-                    const data = JSON.parse(text);
-                    
-                    if (data.schoolInfo) {
-                        localStorage.setItem('schoolName', data.schoolInfo.name || '');
-                        localStorage.setItem('schoolAddress', data.schoolInfo.address || '');
-                        localStorage.setItem('schoolEmail', data.schoolInfo.email || '');
-                        localStorage.setItem('schoolPhone', data.schoolInfo.phone || '');
-                        localStorage.setItem('schoolMotto', data.schoolInfo.motto || '');
-                        localStorage.setItem('logoUrl', data.schoolInfo.logoUrl || '');
-                    }
-                    
-                    if (data.academic) {
-                        localStorage.setItem('academicYear', data.academic.academicYear || '');
-                        localStorage.setItem('currentTerm', data.academic.currentTerm || '');
-                        localStorage.setItem('termBegins', data.academic.termBegins || '');
-                        localStorage.setItem('termEnds', data.academic.termEnds || '');
-                        localStorage.setItem('nextTermReopens', data.academic.nextTermReopens || '');
-                        localStorage.setItem('kgTraits', data.academic.kgTraits || '');
-                        localStorage.setItem('primaryTraits', data.academic.primaryTraits || '');
-                        localStorage.setItem('jhsTraits', data.academic.jhsTraits || '');
-                    }
-                    
-                    if (data.grading) {
-                        localStorage.setItem('gradeARemark', data.grading.gradeARemark || '');
-                        localStorage.setItem('gradeBRemark', data.grading.gradeBRemark || '');
-                        localStorage.setItem('gradeCRemark', data.grading.gradeCRemark || '');
-                        localStorage.setItem('gradeDRemark', data.grading.gradeDRemark || '');
-                        localStorage.setItem('gradeERemark', data.grading.gradeERemark || '');
-                        localStorage.setItem('gradeFRemark', data.grading.gradeFRemark || '');
-                        localStorage.setItem('conductOptions', data.grading.conductOptions || '');
-                        localStorage.setItem('interestOptions', data.grading.interestOptions || '');
-                    }
-                    
-                    if (data.signature) {
-                        localStorage.setItem('headteacherName', data.signature.headteacherName || '');
-                        localStorage.setItem('signatureUrl', data.signature.signatureUrl || '');
-                        localStorage.setItem('teacherTitle', data.signature.teacherTitle || '');
-                    }
-                    
-                    loadAllSettings();
-                    showToast('Backup imported successfully!');
-                } catch (error) {
-                    showToast('Invalid backup file', 'error');
+            showToast('Saving settings...', 'info');
+            
+            try {
+                const response = await fetch(API_URL + '/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                
+                if (response.ok) {
+                    showToast('✅ Settings saved successfully!');
+                    // Also update localStorage for other pages that still use it
+                    localStorage.setItem('schoolName', settings.school_name);
+                    localStorage.setItem('schoolAddress', settings.school_address);
+                    localStorage.setItem('schoolEmail', settings.school_email);
+                    localStorage.setItem('schoolPhone', settings.school_phone);
+                    localStorage.setItem('schoolMotto', settings.school_motto);
+                    localStorage.setItem('logoUrl', settings.logo_url);
+                    localStorage.setItem('academicYear', settings.academic_year);
+                    localStorage.setItem('currentTerm', settings.current_term);
+                    localStorage.setItem('termBegins', settings.term_begins);
+                    localStorage.setItem('termEnds', settings.term_ends);
+                    localStorage.setItem('nextTermReopens', settings.next_term_reopens);
+                    localStorage.setItem('kgTraits', settings.kg_traits);
+                    localStorage.setItem('primaryTraits', settings.primary_traits);
+                    localStorage.setItem('jhsTraits', settings.jhs_traits);
+                    localStorage.setItem('gradeARemark', settings.grade_a_remark);
+                    localStorage.setItem('gradeBRemark', settings.grade_b_remark);
+                    localStorage.setItem('gradeCRemark', settings.grade_c_remark);
+                    localStorage.setItem('gradeDRemark', settings.grade_d_remark);
+                    localStorage.setItem('gradeERemark', settings.grade_e_remark);
+                    localStorage.setItem('gradeFRemark', settings.grade_f_remark);
+                    localStorage.setItem('conductOptions', settings.conduct_options);
+                    localStorage.setItem('interestOptions', settings.interest_options);
+                    localStorage.setItem('headteacherName', settings.headteacher_name);
+                    localStorage.setItem('signatureUrl', settings.signature_url);
+                    localStorage.setItem('teacherTitle', settings.teacher_title);
+                } else {
+                    showToast('Failed to save settings', 'error');
                 }
-            };
-            input.click();
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                showToast('Error saving settings', 'error');
+            }
         }
         
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             toast.textContent = message;
-            toast.style.backgroundColor = type === 'error' ? '#ef4444' : '#10b981';
+            toast.style.backgroundColor = type === 'error' ? '#ef4444' : (type === 'info' ? '#3b82f6' : '#10b981');
             toast.style.display = 'block';
             setTimeout(() => {
                 toast.style.display = 'none';
