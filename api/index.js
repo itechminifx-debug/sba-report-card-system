@@ -67,20 +67,25 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // ==================== TEACHER LOGIN ====================
+// ==================== TEACHER LOGIN ====================
 app.post('/api/teacher/login', async (req, res) => {
     const { email, password } = req.body;
+    
+    console.log('Teacher login attempt:', email);
     
     try {
         const result = await pool.query('SELECT * FROM teachers WHERE email = $1', [email]);
         const teacher = result.rows[0];
         
         if (!teacher) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            console.log('Teacher not found:', email);
+            return res.status(401).json({ success: false, message: 'Teacher not found' });
         }
         
         const isValid = await bcrypt.compare(password, teacher.password);
         if (!isValid) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            console.log('Invalid password for:', email);
+            return res.status(401).json({ success: false, message: 'Invalid password' });
         }
         
         const token = jwt.sign(
@@ -99,7 +104,6 @@ app.post('/api/teacher/login', async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
-
 // ==================== STUDENT ROUTES ====================
 app.get('/api/students', async (req, res) => {
     try {
