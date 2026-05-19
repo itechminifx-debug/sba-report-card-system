@@ -67,24 +67,55 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // ==================== TEACHER LOGIN ====================
-// ==================== TEACHER LOGIN ====================
 app.post('/api/teacher/login', async (req, res) => {
     const { email, password } = req.body;
     
-    console.log('Teacher login attempt:', email);
+    console.log('========== TEACHER LOGIN ATTEMPT ==========');
+    console.log('Email received:', email);
+    console.log('Password received:', password);
     
     try {
-        const result = await pool.query('SELECT * FROM teachers WHERE email = $1', [email]);
-        const teacher = result.rows[0];
+        // First, check if table exists
+        const tableCheck = await pool.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'teachers'
+            );
+        `);
+        console.log('Teachers table exists:', tableCheck.rows[0].exists);
         
-        if (!teacher) {
-            console.log('Teacher not found:', email);
+        if (!tableCheck.rows[0].exists) {
+            return res.status(500).json({ success: false, message: 'Teachers table does not exist' });
+        }
+        
+        const result = await pool.query('SELECT * FROM teachers WHERE email = $1', [email]);
+        console.log('Query result rows:', result.rows.length);
+        
+        if (result.rows.length === 0) {
+            console.log('Teacher not found');
             return res.status(401).json({ success: false, message: 'Teacher not found' });
         }
         
-        const isValid = await bcrypt.compare(password, teacher.password);
+        const teacher = result.rows[0];
+        console.log('Teacher found:', teacher.name, teacher.email);
+        console.log('Stored password hash:', teacher.password);
+        
+        // For testing, compare plain text
+        let isValid = false;
+        if (teacher.password === password) {
+            isValid = true;
+            console.log('Plain text password match!');
+        } else {
+            try {
+                isValid = await bcrypt.compare(password, teacher.password);
+                console.log('bcrypt compare result:', isValid);
+            } catch (err) {
+                console.log('bcrypt error:', err.message);
+            }
+        }
+        
         if (!isValid) {
-            console.log('Invalid password for:', email);
+            console.log('Invalid password');
             return res.status(401).json({ success: false, message: 'Invalid password' });
         }
         
