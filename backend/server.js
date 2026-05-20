@@ -53,7 +53,6 @@ app.post('/api/auth/login', async (req, res) => {
     
     console.log('Admin login attempt:', username);
     
-    // First check hardcoded admin for testing
     if (username === 'admin' && password === 'admin123') {
         const token = jwt.sign(
             { id: '1', username: 'admin', role: 'admin' },
@@ -67,7 +66,6 @@ app.post('/api/auth/login', async (req, res) => {
         });
     }
     
-    // Then check database
     try {
         const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
         const user = result.rows[0];
@@ -104,7 +102,6 @@ app.post('/api/teacher/login', async (req, res) => {
     
     console.log('Teacher login attempt:', email);
     
-    // Hardcoded teacher for testing
     if (email === 'teacher@livingspring.edu.gh' && password === 'teacher123') {
         const token = jwt.sign(
             { id: '1', email: email, name: 'Demo Teacher', assigned_class: 'P4', role: 'teacher' },
@@ -118,7 +115,6 @@ app.post('/api/teacher/login', async (req, res) => {
         });
     }
     
-    // Then check database
     try {
         const result = await pool.query('SELECT * FROM teachers WHERE email = $1', [email]);
         const teacher = result.rows[0];
@@ -155,7 +151,6 @@ app.post('/api/parent/login', async (req, res) => {
     
     console.log('Parent login attempt:', email);
     
-    // Hardcoded parent for testing
     if (email === 'parent@livingspring.edu.gh' && password === 'parent123') {
         const token = jwt.sign(
             { id: '1', email: email, name: 'John Parent', role: 'parent' },
@@ -169,7 +164,6 @@ app.post('/api/parent/login', async (req, res) => {
         });
     }
     
-    // Then check database
     try {
         const result = await pool.query('SELECT * FROM parents WHERE email = $1', [email]);
         const parent = result.rows[0];
@@ -198,155 +192,6 @@ app.post('/api/parent/login', async (req, res) => {
         console.error('Parent login error:', error);
         res.status(500).json({ success: false, message: error.message });
     }
-});
-
-// ==================== PARENT FULL REPORT API ====================
-app.get('/api/parent/full-report', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'parent') {
-        return res.status(403).json({ success: false, message: 'Access denied' });
-    }
-    
-    const { student_id, student_name, term, academic_year } = req.query;
-    
-    console.log('Parent full report request:', { student_id, student_name, term, academic_year });
-    
-    try {
-        // 1. FIND STUDENT
-        const studentResult = await pool.query(
-            'SELECT * FROM students WHERE student_id = $1 AND LOWER(name) = LOWER($2)',
-            [student_id, student_name]
-        );
-        
-        if (studentResult.rows.length === 0) {
-            return res.json({ 
-                success: false, 
-                message: 'Student not found. Please check Student ID and Name.' 
-            });
-        }
-        
-        const student = studentResult.rows[0];
-        console.log('Student found:', student.id, student.name);
-        
-        // 2. GET SUBJECTS for this class level
-        let classLevelForSubjects = student.class_level;
-        if (classLevelForSubjects === 'KG1' || classLevelForSubjects === 'KG2') {
-            classLevelForSubjects = 'KG1';
-        } else if (classLevelForSubjects === 'P1' || classLevelForSubjects === 'P2' || classLevelForSubjects === 'P3') {
-            classLevelForSubjects = 'P1-3';
-        } else if (classLevelForSubjects === 'P4' || classLevelForSubjects === 'P5' || classLevelForSubjects === 'P6') {
-            classLevelForSubjects = 'P4-6';
-        } else {
-            classLevelForSubjects = 'JHS';
-        }
-        
-        // Use DISTINCT to prevent duplicate subjects
-const subjectsRes = await pool.query(
-    'SELECT DISTINCT ON (name) id, name, class_level, display_order FROM subjects WHERE class_level = $1 ORDER BY name, display_order',
-    [classLevelForSubjects]
-);
-        console.log('Subjects found:', subjectsRes.rows.length);
-        
-        // 3. GET SBA MARKS
-        const sbaResult = await pool.query(
-            'SELECT * FROM sba_marks WHERE student_id = $1 AND term = $2 AND academic_year = $3',
-            [student.id, term, academic_year]
-        );
-        console.log('SBA marks found:', sbaResult.rows.length);
-        
-        // 4. GET TEACHER-ENTERED REPORT DATA (from localStorage - shared across all users)
-        let studentReportData = {};
-        try {
-            const allReportData = JSON.parse(localStorage.getItem('teacher_report_data') || '{}');
-            const reportKey = `${student.class_level}_${term}_${academic_year}`;
-            const classReportData = allReportData[reportKey] || {};
-            studentReportData = classReportData[student.id] || {};
-            console.log('Report data found for student');
-        } catch (err) {
-            console.log('No report data found');
-        }
-        
-        // 5. GET SCHOOL SETTINGS
-        const settingsRes = await pool.query('SELECT setting_key, setting_value FROM school_settings');
-        const settings = {};
-        settingsRes.rows.forEach(row => {
-            settings[row.setting_key] = row.setting_value;
-        });
-        
-        // 6. PERSONAL DEVELOPMENT TRAITS based on class
-        let personalDevTraits = [];
-        if (student.class_level === 'KG1' || student.class_level === 'KG2') {
-            personalDevTraits = ['Leadership Ability', 'Basic Life Skills', 'Neatness', 'Sociability', 'Creativity & Initiative', 'Dependability', 'Recreation Work'];
-        } else if (student.class_level === 'P1' || student.class_level === 'P2' || student.class_level === 'P3' ||
-                   student.class_level === 'P4' || student.class_level === 'P5' || student.class_level === 'P6') {
-            personalDevTraits = ['Leadership Ability', 'Basic Life Skills', 'Neatness', 'Sociability', 'Creativity & Initiative', 'Dependability', 'Recreation Work', 'Work Habits'];
-        } else {
-            personalDevTraits = ['Basic Life Skills', 'Social Development Skills', 'Outdoor Activity', 'Work Habits'];
-        }
-        
-        // 7. CALCULATE POSITIONS
-        const classStudentsRes = await pool.query('SELECT id FROM students WHERE class_level = $1', [student.class_level]);
-        const classStudentIds = classStudentsRes.rows.map(s => s.id);
-        
-        // Per-subject positions
-        const subjectPositions = {};
-        for (const subject of subjectsRes.rows) {
-            const allScores = [];
-            for (const sid of classStudentIds) {
-                const mark = await pool.query(
-                    'SELECT total FROM sba_marks WHERE student_id = $1 AND subject_id = $2 AND term = $3 AND academic_year = $4',
-                    [sid, subject.id, term, academic_year]
-                );
-                const score = mark.rows[0] ? parseFloat(mark.rows[0].total) || 0 : 0;
-                allScores.push({ studentId: sid, score });
-            }
-            allScores.sort((a, b) => b.score - a.score);
-            const position = allScores.findIndex(p => p.studentId === student.id) + 1;
-            subjectPositions[subject.id] = position;
-        }
-        
-        // Overall position
-        const allAverages = [];
-        for (const sid of classStudentIds) {
-            let totalScore = 0;
-            let subjectCount = 0;
-            for (const subject of subjectsRes.rows) {
-                const mark = await pool.query(
-                    'SELECT total FROM sba_marks WHERE student_id = $1 AND subject_id = $2 AND term = $3 AND academic_year = $4',
-                    [sid, subject.id, term, academic_year]
-                );
-                if (mark.rows[0] && mark.rows[0].total) {
-                    totalScore += parseFloat(mark.rows[0].total);
-                    subjectCount++;
-                }
-            }
-            const average = subjectCount > 0 ? totalScore / subjectCount : 0;
-            allAverages.push({ studentId: sid, average });
-        }
-        allAverages.sort((a, b) => b.average - a.average);
-        const overallPosition = allAverages.findIndex(p => p.studentId === student.id) + 1;
-        
-        res.json({
-            success: true,
-            student,
-            subjects: subjectsRes.rows,
-            sbaMarks: sbaResult.rows,
-            reportData: studentReportData,
-            settings: settings,
-            personalDevTraits: personalDevTraits,
-            subjectPositions: subjectPositions,
-            overallPosition: overallPosition,
-            totalStudents: classStudentIds.length
-        });
-        
-    } catch (error) {
-        console.error('Error fetching full report:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-// Also add a test endpoint to check if parent is authenticated
-app.get('/api/parent/test', authenticateToken, (req, res) => {
-    res.json({ success: true, message: 'Parent authenticated', user: req.user });
 });
 
 // ==================== STUDENT API ====================
@@ -687,9 +532,8 @@ app.get('/api/health', (req, res) => {
 // ==================== CREATE DEFAULT DATA ENDPOINT ====================
 app.post('/api/setup-defaults', async (req, res) => {
     try {
-        const hashedPassword = '$2a$10$N9qo8uLOickgx2ZMRZoMy.Mr/.cJqJFxZF6QqGQvQyQyQyQyQyQ';
+        const hashedPassword = '$2a$10$N9qo8uLOickgx2ZMRZoMy.Mr/.cJqJFxZF6QqGQvQyQyQyQyQy';
         
-        // Create users table if not exists
         await pool.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -700,7 +544,6 @@ app.post('/api/setup-defaults', async (req, res) => {
             )
         `);
         
-        // Create teachers table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS teachers (
                 id SERIAL PRIMARY KEY,
@@ -715,7 +558,6 @@ app.post('/api/setup-defaults', async (req, res) => {
             )
         `);
         
-        // Create parents table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS parents (
                 id SERIAL PRIMARY KEY,
@@ -730,7 +572,6 @@ app.post('/api/setup-defaults', async (req, res) => {
             )
         `);
         
-        // Create parent_student_link table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS parent_student_link (
                 id SERIAL PRIMARY KEY,
@@ -742,7 +583,6 @@ app.post('/api/setup-defaults', async (req, res) => {
             )
         `);
         
-        // Insert default admin
         await pool.query(
             `INSERT INTO users (username, password, role) 
              VALUES ('admin', $1, 'admin')
@@ -750,7 +590,6 @@ app.post('/api/setup-defaults', async (req, res) => {
             [hashedPassword]
         );
         
-        // Insert default teacher
         await pool.query(
             `INSERT INTO teachers (teacher_id, name, email, password, assigned_class) 
              VALUES ('TCH001', 'Demo Teacher', 'teacher@livingspring.edu.gh', $1, 'P4')
@@ -758,7 +597,6 @@ app.post('/api/setup-defaults', async (req, res) => {
             [hashedPassword]
         );
         
-        // Insert default parent
         await pool.query(
             `INSERT INTO parents (parent_id, name, email, password, phone) 
              VALUES ('PRT001', 'John Parent', 'parent@livingspring.edu.gh', $1, '+233 24 123 4567')
@@ -773,128 +611,110 @@ app.post('/api/setup-defaults', async (req, res) => {
     }
 });
 
-// ==================== SERVE FRONTEND ====================
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
-});
+// ==================== REPORT CARD DATA API ====================
 
-app.get('/:page.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend', `${req.params.page}.html`));
-});
-
-// Parent: Get student report by ID and Name
-app.get('/api/parent/student-report', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'parent') {
-        return res.status(403).json({ success: false, message: 'Access denied' });
-    }
-    
-    const { student_id, student_name, term, academic_year } = req.query;
+// Save report card data
+app.post('/api/report-card-data', authenticateToken, async (req, res) => {
+    const { 
+        student_id, class_level, term, academic_year,
+        attendance_present, attendance_total, promoted_to,
+        conduct, interest, teacher_remarks, headteacher_remarks
+    } = req.body;
     
     try {
-        // Find student by ID and name
-        const studentResult = await pool.query(
-            'SELECT * FROM students WHERE student_id = $1 AND LOWER(name) = LOWER($2)',
-            [student_id, student_name]
-        );
-        
-        if (studentResult.rows.length === 0) {
-            return res.status(404).json({ success: false, message: 'Student not found. Please check Student ID and Name.' });
+        // Build PD columns dynamically from pd_0 to pd_9
+        const pdColumns = [];
+        const pdValues = [];
+        for (let i = 0; i <= 9; i++) {
+            const pdKey = `pd_${i}`;
+            if (req.body[pdKey] !== undefined) {
+                pdColumns.push(pdKey);
+                pdValues.push(req.body[pdKey]);
+            }
         }
         
-        const student = studentResult.rows[0];
+        // Build the column list and value placeholders
+        const columns = [
+            'student_id', 'class_level', 'term', 'academic_year',
+            'attendance_present', 'attendance_total', 'promoted_to',
+            'conduct', 'interest', 'teacher_remarks', 'headteacher_remarks'
+        ];
         
-        // Get subjects for this class
-        const subjectsRes = await pool.query('SELECT * FROM subjects WHERE class_level = $1', [student.class_level]);
+        const values = [
+            student_id, class_level, term, academic_year,
+            attendance_present, attendance_total, promoted_to,
+            conduct, interest, teacher_remarks, headteacher_remarks
+        ];
         
-        // Get SBA marks
-        const sbaResult = await pool.query(
-            'SELECT * FROM sba_marks WHERE student_id = $1 AND term = $2 AND academic_year = $3',
-            [student.id, term, academic_year]
-        );
+        // Add PD columns
+        for (const col of pdColumns) {
+            columns.push(col);
+        }
+        for (const val of pdValues) {
+            values.push(val);
+        }
         
-        res.json({
-            success: true,
-            student,
-            subjects: subjectsRes.rows,
-            sbaMarks: sbaResult.rows
-        });
+        // Build placeholders ($1, $2, etc.)
+        const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+        const columnNames = columns.join(', ');
+        
+        // Build UPDATE SET clause for ON CONFLICT
+        const updateSet = columns.map(col => `${col} = EXCLUDED.${col}`).join(', ');
+        
+        const query = `
+            INSERT INTO report_card_data (${columnNames})
+            VALUES (${placeholders})
+            ON CONFLICT (student_id, term, academic_year) 
+            DO UPDATE SET ${updateSet}, updated_at = CURRENT_TIMESTAMP
+            RETURNING *
+        `;
+        
+        const result = await pool.query(query, values);
+        
+        res.json({ success: true, data: result.rows[0] });
     } catch (error) {
-        console.error('Error fetching student report:', error);
+        console.error('Error saving report card data:', error);
         res.status(500).json({ error: error.message });
     }
 });
-// Parent: Get complete student report with all data
-app.get('/api/parent/student-report', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'parent') {
-        return res.status(403).json({ success: false, message: 'Access denied' });
+
+// Get report card data for a student
+app.get('/api/report-card-data', async (req, res) => {
+    const { student_id, term, academic_year } = req.query;
+    
+    if (!student_id || !term || !academic_year) {
+        return res.json({});
     }
     
-    const { student_id, student_name, term, academic_year } = req.query;
-    
     try {
-        // Find student by ID and name
-        const studentResult = await pool.query(
-            'SELECT * FROM students WHERE student_id = $1 AND LOWER(name) = LOWER($2)',
-            [student_id, student_name]
+        const result = await pool.query(
+            'SELECT * FROM report_card_data WHERE student_id = $1 AND term = $2 AND academic_year = $3',
+            [student_id, term, academic_year]
         );
         
-        if (studentResult.rows.length === 0) {
-            return res.json({ success: false, message: 'Student not found. Please check Student ID and Name.' });
+        if (result.rows.length === 0) {
+            return res.json({});
         }
         
-        const student = studentResult.rows[0];
-        
-        // Get subjects for this class
-        let classLevelForSubjects = student.class_level;
-        if (classLevelForSubjects === 'KG1' || classLevelForSubjects === 'KG2') {
-            classLevelForSubjects = 'KG1';
-        } else if (classLevelForSubjects === 'P1' || classLevelForSubjects === 'P2' || classLevelForSubjects === 'P3') {
-            classLevelForSubjects = 'P1-3';
-        } else if (classLevelForSubjects === 'P4' || classLevelForSubjects === 'P5' || classLevelForSubjects === 'P6') {
-            classLevelForSubjects = 'P4-6';
-        } else {
-            classLevelForSubjects = 'JHS';
-        }
-        
-        const subjectsRes = await pool.query(
-            'SELECT * FROM subjects WHERE class_level = $1 ORDER BY display_order',
-            [classLevelForSubjects]
-        );
-        
-        // Get SBA marks
-        const sbaResult = await pool.query(
-            'SELECT * FROM sba_marks WHERE student_id = $1 AND term = $2 AND academic_year = $3',
-            [student.id, term, academic_year]
-        );
-        
-        // Get report data from localStorage (teacher-entered data)
-        const allReportData = JSON.parse(localStorage.getItem('teacher_report_data') || '{}');
-        const reportKey = `${student.class_level}_${term}_${academic_year}`;
-        const classReportData = allReportData[reportKey] || {};
-        const studentReportData = classReportData[student.id] || {};
-        
-        res.json({
-            success: true,
-            student,
-            subjects: subjectsRes.rows,
-            sbaMarks: sbaResult.rows,
-            reportData: studentReportData
-        });
+        res.json(result.rows[0]);
     } catch (error) {
-        console.error('Error fetching student report:', error);
+        console.error('Error fetching report card data:', error);
         res.status(500).json({ error: error.message });
     }
 });
-// ==================== PARENT COMPLETE REPORT API ====================
-app.get('/api/parent/student-report', authenticateToken, async (req, res) => {
+
+// ==================== PARENT FULL REPORT API (FIXED - reads from database, not localStorage) ====================
+app.get('/api/parent/full-report', authenticateToken, async (req, res) => {
     if (req.user.role !== 'parent') {
         return res.status(403).json({ success: false, message: 'Access denied' });
     }
     
     const { student_id, student_name, term, academic_year } = req.query;
     
+    console.log('Parent full report request:', { student_id, student_name, term, academic_year });
+    
     try {
-        // 1. FIND STUDENT by ID and Name
+        // 1. FIND STUDENT
         const studentResult = await pool.query(
             'SELECT * FROM students WHERE student_id = $1 AND LOWER(name) = LOWER($2)',
             [student_id, student_name]
@@ -908,6 +728,7 @@ app.get('/api/parent/student-report', authenticateToken, async (req, res) => {
         }
         
         const student = studentResult.rows[0];
+        console.log('Student found:', student.id, student.name);
         
         // 2. GET SUBJECTS for this class level
         let classLevelForSubjects = student.class_level;
@@ -922,151 +743,25 @@ app.get('/api/parent/student-report', authenticateToken, async (req, res) => {
         }
         
         const subjectsRes = await pool.query(
-            'SELECT * FROM subjects WHERE class_level = $1 ORDER BY display_order',
+            'SELECT DISTINCT ON (name) id, name, class_level, display_order FROM subjects WHERE class_level = $1 ORDER BY name, display_order',
             [classLevelForSubjects]
         );
-        
-        // 3. GET SBA MARKS (Academic Performance)
-        const sbaResult = await pool.query(
-            'SELECT * FROM sba_marks WHERE student_id = $1 AND term = $2 AND academic_year = $3',
-            [student.id, term, academic_year]
-        );
-        
-        // 4. GET TEACHER-ENTERED REPORT DATA (Personal Dev, Attendance, Remarks)
-        const allReportData = JSON.parse(localStorage.getItem('teacher_report_data') || '{}');
-        const reportKey = `${student.class_level}_${term}_${academic_year}`;
-        const classReportData = allReportData[reportKey] || {};
-        const studentReportData = classReportData[student.id] || {};
-        
-        // 5. GET SCHOOL SETTINGS (Logo, Address, Motto, Term Dates, Grade Remarks)
-        const settingsRes = await pool.query('SELECT setting_key, setting_value FROM school_settings');
-        const settings = {};
-        settingsRes.rows.forEach(row => {
-            settings[row.setting_key] = row.setting_value;
-        });
-        
-        // 6. GET PERSONAL DEVELOPMENT TRAITS based on class level
-        let personalDevTraits = [];
-        if (student.class_level === 'KG1' || student.class_level === 'KG2') {
-            personalDevTraits = ['Leadership Ability', 'Basic Life Skills', 'Neatness', 'Sociability', 'Creativity & Initiative', 'Dependability', 'Recreation Work'];
-        } else if (student.class_level === 'P1' || student.class_level === 'P2' || student.class_level === 'P3' ||
-                   student.class_level === 'P4' || student.class_level === 'P5' || student.class_level === 'P6') {
-            personalDevTraits = ['Leadership Ability', 'Basic Life Skills', 'Neatness', 'Sociability', 'Creativity & Initiative', 'Dependability', 'Recreation Work', 'Work Habits'];
-        } else {
-            personalDevTraits = ['Basic Life Skills', 'Social Development Skills', 'Outdoor Activity', 'Work Habits'];
-        }
-        
-        // 7. CALCULATE POSITIONS (per subject and overall)
-        // Get all students in same class to calculate positions
-        const classStudentsRes = await pool.query('SELECT id FROM students WHERE class_level = $1', [student.class_level]);
-        const classStudentIds = classStudentsRes.rows.map(s => s.id);
-        
-        // Calculate per-subject positions
-        const subjectPositions = {};
-        for (const subject of subjectsRes.rows) {
-            const allScores = [];
-            for (const sid of classStudentIds) {
-                const mark = await pool.query(
-                    'SELECT total FROM sba_marks WHERE student_id = $1 AND subject_id = $2 AND term = $3 AND academic_year = $4',
-                    [sid, subject.id, term, academic_year]
-                );
-                const score = mark.rows[0] ? parseFloat(mark.rows[0].total) || 0 : 0;
-                allScores.push({ studentId: sid, score });
-            }
-            allScores.sort((a, b) => b.score - a.score);
-            const position = allScores.findIndex(p => p.studentId === student.id) + 1;
-            subjectPositions[subject.id] = position;
-        }
-        
-        // Calculate overall position
-        const allAverages = [];
-        for (const sid of classStudentIds) {
-            let totalScore = 0;
-            let subjectCount = 0;
-            for (const subject of subjectsRes.rows) {
-                const mark = await pool.query(
-                    'SELECT total FROM sba_marks WHERE student_id = $1 AND subject_id = $2 AND term = $3 AND academic_year = $4',
-                    [sid, subject.id, term, academic_year]
-                );
-                if (mark.rows[0] && mark.rows[0].total) {
-                    totalScore += parseFloat(mark.rows[0].total);
-                    subjectCount++;
-                }
-            }
-            const average = subjectCount > 0 ? totalScore / subjectCount : 0;
-            allAverages.push({ studentId: sid, average });
-        }
-        allAverages.sort((a, b) => b.average - a.average);
-        const overallPosition = allAverages.findIndex(p => p.studentId === student.id) + 1;
-        
-        res.json({
-            success: true,
-            student,
-            subjects: subjectsRes.rows,
-            sbaMarks: sbaResult.rows,
-            reportData: studentReportData,
-            settings: settings,
-            personalDevTraits: personalDevTraits,
-            subjectPositions: subjectPositions,
-            overallPosition: overallPosition,
-            totalStudents: classStudentIds.length
-        });
-        
-    } catch (error) {
-        console.error('Error fetching student report:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// ==================== PARENT FULL REPORT API ====================
-app.get('/api/parent/full-report', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'parent') {
-        return res.status(403).json({ success: false, message: 'Access denied' });
-    }
-    
-    const { student_id, student_name, term, academic_year } = req.query;
-    
-    try {
-        // 1. FIND STUDENT
-        const studentResult = await pool.query(
-            'SELECT * FROM students WHERE student_id = $1 AND LOWER(name) = LOWER($2)',
-            [student_id, student_name]
-        );
-        
-        if (studentResult.rows.length === 0) {
-            return res.json({ success: false, message: 'Student not found. Please check Student ID and Name.' });
-        }
-        
-        const student = studentResult.rows[0];
-        
-        // 2. GET SUBJECTS for this class level
-        let classLevelForSubjects = student.class_level;
-        if (classLevelForSubjects === 'KG1' || classLevelForSubjects === 'KG2') {
-            classLevelForSubjects = 'KG1';
-        } else if (classLevelForSubjects === 'P1' || classLevelForSubjects === 'P2' || classLevelForSubjects === 'P3') {
-            classLevelForSubjects = 'P1-3';
-        } else if (classLevelForSubjects === 'P4' || classLevelForSubjects === 'P5' || classLevelForSubjects === 'P6') {
-            classLevelForSubjects = 'P4-6';
-        } else {
-            classLevelForSubjects = 'JHS';
-        }
-        
-        const subjectsRes = await pool.query(
-            'SELECT * FROM subjects WHERE class_level = $1 ORDER BY display_order',
-            [classLevelForSubjects]
-        );
+        console.log('Subjects found:', subjectsRes.rows.length);
         
         // 3. GET SBA MARKS
         const sbaResult = await pool.query(
             'SELECT * FROM sba_marks WHERE student_id = $1 AND term = $2 AND academic_year = $3',
             [student.id, term, academic_year]
         );
+        console.log('SBA marks found:', sbaResult.rows.length);
         
-        // 4. GET TEACHER-ENTERED REPORT DATA
-        const allReportData = JSON.parse(localStorage.getItem('teacher_report_data') || '{}');
-        const reportKey = `${student.class_level}_${term}_${academic_year}`;
-        const classReportData = allReportData[reportKey] || {};
-        const studentReportData = classReportData[student.id] || {};
+        // 4. FIXED: GET TEACHER-ENTERED REPORT DATA FROM DATABASE (not localStorage)
+        const reportDataResult = await pool.query(
+            'SELECT * FROM report_card_data WHERE student_id = $1 AND term = $2 AND academic_year = $3',
+            [student.id, term, academic_year]
+        );
+        const studentReportData = reportDataResult.rows[0] || {};
+        console.log('Report data found from database:', Object.keys(studentReportData).length);
         
         // 5. GET SCHOOL SETTINGS
         const settingsRes = await pool.query('SELECT setting_key, setting_value FROM school_settings');
@@ -1075,7 +770,7 @@ app.get('/api/parent/full-report', authenticateToken, async (req, res) => {
             settings[row.setting_key] = row.setting_value;
         });
         
-        // 6. PERSONAL DEVELOPMENT TRAITS
+        // 6. PERSONAL DEVELOPMENT TRAITS based on class
         let personalDevTraits = [];
         if (student.class_level === 'KG1' || student.class_level === 'KG2') {
             personalDevTraits = ['Leadership Ability', 'Basic Life Skills', 'Neatness', 'Sociability', 'Creativity & Initiative', 'Dependability', 'Recreation Work'];
@@ -1143,83 +838,17 @@ app.get('/api/parent/full-report', authenticateToken, async (req, res) => {
         
     } catch (error) {
         console.error('Error fetching full report:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// ==================== REPORT CARD DATA API ====================
-
-// Save report card data
-app.post('/api/report-card-data', authenticateToken, async (req, res) => {
-    const { 
-        student_id, class_level, term, academic_year,
-        attendance_present, attendance_total, promoted_to,
-        conduct, interest, teacher_remarks, headteacher_remarks,
-        traits_count, ...pdData
-    } = req.body;
-    
-    try {
-        // Build PD columns dynamically
-        const pdColumns = [];
-        const pdValues = [];
-        for (let i = 0; i < (traits_count || 10); i++) {
-            if (pdData[`pd_${i}`] !== undefined) {
-                pdColumns.push(`pd_${i} = $${pdValues.length + 1}`);
-                pdValues.push(pdData[`pd_${i}`]);
-            }
-        }
-        
-        const result = await pool.query(
-            `INSERT INTO report_card_data 
-             (student_id, class_level, term, academic_year, 
-              attendance_present, attendance_total, promoted_to,
-              conduct, interest, teacher_remarks, headteacher_remarks,
-              ${pdColumns.map(c => c.split('=')[0].trim()).join(', ')})
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, ${pdValues.map((_, i) => `$${12 + i}`).join(', ')})
-             ON CONFLICT (student_id, term, academic_year) 
-             DO UPDATE SET 
-              attendance_present = EXCLUDED.attendance_present,
-              attendance_total = EXCLUDED.attendance_total,
-              promoted_to = EXCLUDED.promoted_to,
-              conduct = EXCLUDED.conduct,
-              interest = EXCLUDED.interest,
-              teacher_remarks = EXCLUDED.teacher_remarks,
-              headteacher_remarks = EXCLUDED.headteacher_remarks,
-              ${pdColumns.map(c => `${c.split('=')[0].trim()} = EXCLUDED.${c.split('=')[0].trim()}`).join(', ')},
-              updated_at = CURRENT_TIMESTAMP
-             RETURNING *`,
-            [student_id, class_level, term, academic_year, 
-             attendance_present, attendance_total, promoted_to,
-             conduct, interest, teacher_remarks, headteacher_remarks,
-             ...pdValues]
-        );
-        
-        res.json({ success: true, data: result.rows[0] });
-    } catch (error) {
-        console.error('Error saving report card data:', error);
-        res.status(500).json({ error: error.message });
-    }
+// ==================== SERVE FRONTEND ====================
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
 });
 
-// Get report card data for a student
-app.get('/api/report-card-data', async (req, res) => {
-    const { student_id, term, academic_year } = req.query;
-    
-    try {
-        const result = await pool.query(
-            'SELECT * FROM report_card_data WHERE student_id = $1 AND term = $2 AND academic_year = $3',
-            [student_id, term, academic_year]
-        );
-        
-        if (result.rows.length === 0) {
-            return res.json({});
-        }
-        
-        res.json(result.rows[0]);
-    } catch (error) {
-        console.error('Error fetching report card data:', error);
-        res.status(500).json({ error: error.message });
-    }
+app.get('/:page.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend', `${req.params.page}.html`));
 });
 
 // ==================== START SERVER ====================
@@ -1232,8 +861,7 @@ app.listen(PORT, () => {
 ║     Server running on port ${PORT}                         ║
 ║     http://localhost:${PORT}                               ║
 ║                                                           ║
-║     🔐 Login Credentials:                                ║
-║     Admin: admin / admin123                              ║
+║     🔐 Login Credentials:                                ║║     Admin: admin / admin123                              ║
 ║     Teacher: teacher@livingspring.edu.gh / teacher123    ║
 ║     Parent: parent@livingspring.edu.gh / parent123       ║
 ║                                                           ║
