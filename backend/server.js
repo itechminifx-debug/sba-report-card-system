@@ -1221,12 +1221,7 @@ app.get('/api/report-card-data', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-// 4. GET TEACHER-ENTERED REPORT DATA (from database now)
-const reportDataResult = await pool.query(
-    'SELECT * FROM report_card_data WHERE student_id = $1 AND term = $2 AND academic_year = $3',
-    [student.id, term, academic_year]
-);
-const studentReportData = reportDataResult.rows[0] || {};
+
 // ==================== START SERVER ====================
 app.listen(PORT, () => {
     console.log(`
