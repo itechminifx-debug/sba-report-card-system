@@ -250,8 +250,9 @@ app.post('/api/students', async (req, res) => {
     }
 });
 
+// ==================== FIXED PUT ENDPOINT (Allows editing student_id) ====================
 app.put('/api/students/:id', async (req, res) => {
-    const { name, class_level, house, gender } = req.body;
+    const { name, class_level, house, gender, student_id } = req.body;
     
     if (!name) {
         return res.status(400).json({ error: 'Name is required' });
@@ -259,8 +260,8 @@ app.put('/api/students/:id', async (req, res) => {
     
     try {
         const result = await pool.query(
-            'UPDATE students SET name = $1, class_level = $2, house = $3, gender = $4 WHERE id = $5 RETURNING *',
-            [name, class_level, house, gender, req.params.id]
+            'UPDATE students SET name = $1, class_level = $2, house = $3, gender = $4, student_id = $5 WHERE id = $6 RETURNING *',
+            [name, class_level, house, gender, student_id, req.params.id]
         );
         
         if (result.rows.length === 0) {
