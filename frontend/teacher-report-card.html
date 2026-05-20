@@ -409,7 +409,6 @@
         let teacherToken = null;
         let teacher = null;
         let currentClass = null;
-        let reportData = {};
         
         // Get class from URL parameter
         const urlParams = new URLSearchParams(window.location.search);
@@ -442,11 +441,22 @@
             document.getElementById('academicYear').value = savedYear;
         }
         
-        // Load report data from localStorage (from teacher-report-data.html)
-        function loadReportData(term, academicYear) {
-            const allSavedData = JSON.parse(localStorage.getItem('teacher_report_data') || '{}');
-            const key = `${currentClass}_${term}_${academicYear}`;
-            return allSavedData[key] || {};
+        // FIXED: Load report data from DATABASE instead of localStorage
+        async function loadReportDataFromDatabase(studentId, term, academicYear) {
+            try {
+                const response = await fetch(API_URL + `/api/report-card-data?student_id=${studentId}&term=${term}&academic_year=${academicYear}`, {
+                    headers: { 'Authorization': `Bearer ${teacherToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    return data || {};
+                }
+                return {};
+            } catch (error) {
+                console.error('Error loading report data from database:', error);
+                return {};
+            }
         }
         
         function getSchoolSettings() {
@@ -572,8 +582,9 @@
             const settings = getSchoolSettings();
             const className = getClassName(currentClass);
             const termText = term === '1' ? 'First Term' : (term === '2' ? 'Second Term' : 'Third Term');
-            const reportDataObj = loadReportData(term, academicYear);
-            const studentReportData = reportDataObj[student.id] || {};
+            
+            // FIXED: Load report data from DATABASE
+            const studentReportData = await loadReportDataFromDatabase(studentId, term, academicYear);
             
             // Load SBA marks for this student
             const marksRes = await fetch(API_URL + `/api/sba/all?class_level=${currentClass}&term=${term}&academic_year=${academicYear}`);
@@ -611,7 +622,7 @@
             const overallGrade = getGradeWithRemark(parseFloat(average)).grade;
             const numberOnRoll = students.length;
             
-            // Get Personal Development traits and grades
+            // Get Personal Development traits and grades from DATABASE
             const traits = getPersonalDevTraits();
             let devHtml = '';
             for (let i = 0; i < traits.length; i++) {
@@ -619,7 +630,7 @@
                 devHtml += `<div class="dev-item"><span>${traits[i]}:</span><span><strong>${grade}</strong></span></div>`;
             }
             
-            // Get attendance and other data
+            // Get attendance and other data from DATABASE
             const attendancePresent = studentReportData.attendance_present || '___';
             const attendanceTotal = studentReportData.attendance_total || '___';
             const promotedTo = studentReportData.promoted_to || '_____________';
@@ -676,7 +687,7 @@
                                 <td colspan="3"><strong>Overall Average</strong></td>
                                 <td><strong>${average}%</strong></td>
                                 <td><strong>${overallGrade}</strong></td>
-                                <td>—</td>
+                                <td>—</span></td>
                             </tr>
                         </tbody>
                     </table>
