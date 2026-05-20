@@ -239,10 +239,11 @@ app.get('/api/parent/full-report', authenticateToken, async (req, res) => {
             classLevelForSubjects = 'JHS';
         }
         
-        const subjectsRes = await pool.query(
-            'SELECT * FROM subjects WHERE class_level = $1 ORDER BY display_order',
-            [classLevelForSubjects]
-        );
+        // Use DISTINCT to prevent duplicate subjects
+const subjectsRes = await pool.query(
+    'SELECT DISTINCT ON (name) id, name, class_level, display_order FROM subjects WHERE class_level = $1 ORDER BY name, display_order',
+    [classLevelForSubjects]
+);
         console.log('Subjects found:', subjectsRes.rows.length);
         
         // 3. GET SBA MARKS
