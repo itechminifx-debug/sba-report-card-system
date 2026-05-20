@@ -100,6 +100,11 @@
             color: white;
         }
         
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
@@ -243,17 +248,6 @@
             th, td { padding: 8px; }
             .action-buttons { flex-direction: column; gap: 5px; }
         }
-        
-        .student-id-display {
-            background: #f8fafc;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 14px;
-        }
-        .student-id-display strong {
-            color: #4f46e5;
-        }
     </style>
 </head>
 <body>
@@ -307,7 +301,7 @@
                     </thead>
                     <tbody id="studentsTableBody">
                         <tr>
-                            <td colspan="6" style="text-align:center; padding:40px;">Loading...</td>
+                            <td colspan="6" style="text-align:center; padding:40px;">Loading...</span></td>
                         </tr>
                     </tbody>
                 </table>
@@ -315,22 +309,23 @@
         </div>
     </div>
     
-    <!-- Add Student Modal -->
-    <div id="addModal" class="modal">
+    <!-- Add/Edit Student Modal (ALL FIELDS EDITABLE) -->
+    <div id="studentModal" class="modal">
         <div class="modal-content">
-            <h3>Add New Student</h3>
+            <h3 id="modalTitle">Add Student</h3>
+            <input type="hidden" id="studentId">
             <div class="form-group">
                 <label>Student Name *</label>
-                <input type="text" id="addStudentName" placeholder="Full name">
+                <input type="text" id="studentName" placeholder="Full name">
             </div>
             <div class="form-group">
-                <label>Student ID (Optional)</label>
-                <input type="text" id="addStudentId" placeholder="e.g., LS-2024-001 or STU001">
+                <label>Student ID</label>
+                <input type="text" id="studentManualId" placeholder="e.g., LS-2024-001 or STU001">
                 <small>Leave empty to auto-generate</small>
             </div>
             <div class="form-group">
                 <label>Class Level</label>
-                <select id="addStudentClass">
+                <select id="studentClass">
                     <option value="KG1">KG 1</option>
                     <option value="KG2">KG 2</option>
                     <option value="P1">Primary 1</option>
@@ -346,7 +341,7 @@
             </div>
             <div class="form-group">
                 <label>House</label>
-                <select id="addStudentHouse">
+                <select id="studentHouse">
                     <option value="">Select House</option>
                     <option value="Red">Red House</option>
                     <option value="Blue">Blue House</option>
@@ -356,67 +351,14 @@
             </div>
             <div class="form-group">
                 <label>Gender</label>
-                <select id="addStudentGender">
+                <select id="studentGender">
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                 </select>
             </div>
             <div class="modal-buttons">
-                <button class="btn" onclick="saveNewStudent()">Save</button>
-                <button class="btn btn-danger" onclick="closeAddModal()">Cancel</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Edit Student Modal (No Student ID field) -->
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <h3>Edit Student</h3>
-            <input type="hidden" id="editStudentId">
-            <div class="student-id-display">
-                <strong>Student ID:</strong> <span id="editStudentIdDisplay">-</span>
-                <small>(ID cannot be changed)</small>
-            </div>
-            <div class="form-group">
-                <label>Student Name *</label>
-                <input type="text" id="editStudentName" placeholder="Full name">
-            </div>
-            <div class="form-group">
-                <label>Class Level</label>
-                <select id="editStudentClass">
-                    <option value="KG1">KG 1</option>
-                    <option value="KG2">KG 2</option>
-                    <option value="P1">Primary 1</option>
-                    <option value="P2">Primary 2</option>
-                    <option value="P3">Primary 3</option>
-                    <option value="P4">Primary 4</option>
-                    <option value="P5">Primary 5</option>
-                    <option value="P6">Primary 6</option>
-                    <option value="JHS1">JHS 1</option>
-                    <option value="JHS2">JHS 2</option>
-                    <option value="JHS3">JHS 3</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>House</label>
-                <select id="editStudentHouse">
-                    <option value="">Select House</option>
-                    <option value="Red">Red House</option>
-                    <option value="Blue">Blue House</option>
-                    <option value="Green">Green House</option>
-                    <option value="Yellow">Yellow House</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Gender</label>
-                <select id="editStudentGender">
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                </select>
-            </div>
-            <div class="modal-buttons">
-                <button class="btn" onclick="saveEditStudent()">Save Changes</button>
-                <button class="btn btn-danger" onclick="closeEditModal()">Cancel</button>
+                <button class="btn" onclick="saveStudent()">Save</button>
+                <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
             </div>
         </div>
     </div>
@@ -426,6 +368,7 @@
     <script>
         const API_URL = '';
         
+        // Check login
         const token = localStorage.getItem('token');
         if (!token) {
             window.location.href = 'login.html';
@@ -434,11 +377,13 @@
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         document.getElementById('userName').innerText = user.username || 'Admin';
         
+        // Load students from API
         async function loadStudents() {
             try {
                 const response = await fetch(API_URL + '/api/students');
                 let students = await response.json();
                 
+                // Apply search filter
                 const search = document.getElementById('searchInput').value.toLowerCase();
                 if (search) {
                     students = students.filter(s => 
@@ -447,6 +392,7 @@
                     );
                 }
                 
+                // Apply class filter
                 const classFilter = document.getElementById('classFilter').value;
                 if (classFilter !== 'all') {
                     students = students.filter(s => s.class_level === classFilter);
@@ -455,7 +401,7 @@
                 renderTable(students);
             } catch (error) {
                 console.error('Error:', error);
-                document.getElementById('studentsTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px;">Error loading students</td></tr>';
+                document.getElementById('studentsTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px;">Error loading students</span></td>';
             }
         }
         
@@ -473,7 +419,7 @@
             const tbody = document.getElementById('studentsTableBody');
             
             if (students.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px;">No students found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px;">No students found</span></td>';
                 return;
             }
             
@@ -482,14 +428,14 @@
                 html += `
                     <tr>
                         <td><strong>${escapeHtml(s.student_id)}</strong></td>
-                        <td>${escapeHtml(s.name)}</td>
-                        <td>${formatClassName(s.class_level)}</td>
-                        <td>${s.house || '-'}</td>
-                        <td>${s.gender || '-'}</td>
+                        <td>${escapeHtml(s.name)}</span></td>
+                        <td>${formatClassName(s.class_level)}</span></td>
+                        <td>${s.house || '-'}</span></td>
+                        <td>${s.gender || '-'}</span></td>
                         <td class="action-buttons">
-                            <button class="edit-btn" onclick="openEditModal(${s.id})">Edit</button>
+                            <button class="edit-btn" onclick="editStudent(${s.id})">Edit</button>
                             <button class="delete-btn" onclick="deleteStudent(${s.id})">Delete</button>
-                        </td>
+                        </span></td>
                     </tr>
                 `;
             });
@@ -497,88 +443,49 @@
         }
         
         function openAddModal() {
-            document.getElementById('addStudentName').value = '';
-            document.getElementById('addStudentId').value = '';
-            document.getElementById('addStudentClass').value = 'KG1';
-            document.getElementById('addStudentHouse').value = '';
-            document.getElementById('addStudentGender').value = 'Male';
-            document.getElementById('addModal').style.display = 'flex';
+            document.getElementById('modalTitle').innerText = 'Add Student';
+            document.getElementById('studentId').value = '';
+            document.getElementById('studentName').value = '';
+            document.getElementById('studentManualId').value = '';
+            document.getElementById('studentManualId').readOnly = false;
+            document.getElementById('studentManualId').style.backgroundColor = 'white';
+            document.getElementById('studentClass').value = 'KG1';
+            document.getElementById('studentHouse').value = '';
+            document.getElementById('studentGender').value = 'Male';
+            document.getElementById('studentModal').style.display = 'flex';
         }
         
-        function closeAddModal() {
-            document.getElementById('addModal').style.display = 'none';
-        }
-        
-        async function saveNewStudent() {
-            const studentData = {
-                name: document.getElementById('addStudentName').value,
-                class_level: document.getElementById('addStudentClass').value,
-                house: document.getElementById('addStudentHouse').value,
-                gender: document.getElementById('addStudentGender').value
-            };
-            
-            const manualId = document.getElementById('addStudentId').value.trim();
-            if (manualId) {
-                studentData.student_id = manualId;
-            }
-            
-            if (!studentData.name) {
-                showToast('Please enter student name', 'error');
-                return;
-            }
-            
-            try {
-                const response = await fetch(API_URL + '/api/students', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(studentData)
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    closeAddModal();
-                    await loadStudents();
-                    showToast('Student added successfully!', 'success');
-                } else {
-                    showToast(result.error || 'Error saving student', 'error');
-                }
-            } catch (error) {
-                showToast('Error: ' + error.message, 'error');
-            }
-        }
-        
-        async function openEditModal(id) {
+        async function editStudent(id) {
             try {
                 const response = await fetch(API_URL + `/api/students/${id}`);
                 const student = await response.json();
                 
-                document.getElementById('editStudentId').value = student.id;
-                document.getElementById('editStudentIdDisplay').innerText = student.student_id;
-                document.getElementById('editStudentName').value = student.name;
-                document.getElementById('editStudentClass').value = student.class_level;
-                document.getElementById('editStudentHouse').value = student.house || '';
-                document.getElementById('editStudentGender').value = student.gender || 'Male';
-                document.getElementById('editModal').style.display = 'flex';
+                document.getElementById('modalTitle').innerText = 'Edit Student';
+                document.getElementById('studentId').value = student.id;
+                document.getElementById('studentName').value = student.name;
+                // Make Student ID field EDITABLE - you can change it!
+                const idField = document.getElementById('studentManualId');
+                idField.value = student.student_id || '';
+                idField.readOnly = false;
+                idField.style.backgroundColor = 'white';
+                idField.placeholder = 'Enter new Student ID if needed';
+                document.getElementById('studentClass').value = student.class_level;
+                document.getElementById('studentHouse').value = student.house || '';
+                document.getElementById('studentGender').value = student.gender || 'Male';
+                document.getElementById('studentModal').style.display = 'flex';
             } catch (error) {
                 showToast('Error loading student', 'error');
             }
         }
         
-        function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
-        }
-        
-        async function saveEditStudent() {
-            const id = document.getElementById('editStudentId').value;
+        async function saveStudent() {
+            const id = document.getElementById('studentId').value;
+            const manualId = document.getElementById('studentManualId').value.trim();
             const studentData = {
-                name: document.getElementById('editStudentName').value,
-                class_level: document.getElementById('editStudentClass').value,
-                house: document.getElementById('editStudentHouse').value,
-                gender: document.getElementById('editStudentGender').value
+                name: document.getElementById('studentName').value,
+                class_level: document.getElementById('studentClass').value,
+                house: document.getElementById('studentHouse').value,
+                gender: document.getElementById('studentGender').value
             };
             
             if (!studentData.name) {
@@ -586,26 +493,48 @@
                 return;
             }
             
+            // Include student_id for both ADD and EDIT
+            if (manualId) {
+                studentData.student_id = manualId;
+            }
+            
             try {
-                const response = await fetch(API_URL + `/api/students/${id}`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(studentData)
-                });
+                let response;
+                if (id) {
+                    // EDIT MODE - Update existing student including student_id
+                    console.log('Updating student:', id, studentData);
+                    response = await fetch(API_URL + `/api/students/${id}`, {
+                        method: 'PUT',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(studentData)
+                    });
+                } else {
+                    // ADD MODE - Create new student
+                    console.log('Adding new student:', studentData);
+                    response = await fetch(API_URL + '/api/students', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(studentData)
+                    });
+                }
                 
                 const result = await response.json();
                 
                 if (response.ok) {
-                    closeEditModal();
+                    closeModal();
                     await loadStudents();
-                    showToast('Student updated successfully!', 'success');
+                    showToast(id ? 'Student updated successfully!' : 'Student added successfully!', 'success');
                 } else {
-                    showToast(result.error || 'Error updating student', 'error');
+                    showToast(result.error || 'Error saving student', 'error');
                 }
             } catch (error) {
+                console.error('Save error:', error);
                 showToast('Error: ' + error.message, 'error');
             }
         }
@@ -620,7 +549,7 @@
                 studentName = 'this student';
             }
             
-            if (confirm(`⚠️ WARNING: Delete ${studentName}?\n\nThis will permanently delete:\n• Student record\n• All SBA marks\n• All Report Card Data\n\nThis action cannot be undone!`)) {
+            if (confirm(`⚠️ WARNING: Delete ${studentName}?\n\nThis will permanently delete:\n• Student record\n• All SBA marks\n• All Report Card Data\n• All related records\n\nThis action cannot be undone!`)) {
                 showToast('Deleting student...', 'info');
                 
                 try {
@@ -629,17 +558,23 @@
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     
+                    const result = await response.json();
+                    
                     if (response.ok) {
                         await loadStudents();
                         showToast('Student deleted successfully!', 'success');
                     } else {
-                        const result = await response.json();
                         showToast(result.error || 'Error deleting student', 'error');
                     }
                 } catch (error) {
+                    console.error('Delete error:', error);
                     showToast('Error: ' + error.message, 'error');
                 }
             }
+        }
+        
+        function closeModal() {
+            document.getElementById('studentModal').style.display = 'none';
         }
         
         function showToast(message, type = 'success') {
@@ -673,6 +608,7 @@
             });
         }
         
+        // Load students on page load
         loadStudents();
     </script>
 </body>
