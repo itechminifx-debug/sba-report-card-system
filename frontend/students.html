@@ -301,7 +301,7 @@
                     </thead>
                     <tbody id="studentsTableBody">
                         <tr>
-                            <td colspan="6" style="text-align:center; padding:40px;">Loading...</td>
+                            <td colspan="6" style="text-align:center; padding:40px;">Loading...</span></td>
                         </tr>
                     </tbody>
                 </table>
@@ -309,7 +309,7 @@
         </div>
     </div>
     
-    <!-- Add/Edit Student Modal -->
+    <!-- Add/Edit Student Modal (ALL FIELDS EDITABLE) -->
     <div id="studentModal" class="modal">
         <div class="modal-content">
             <h3 id="modalTitle">Add Student</h3>
@@ -319,9 +319,9 @@
                 <input type="text" id="studentName" placeholder="Full name">
             </div>
             <div class="form-group">
-                <label>Student ID (Optional)</label>
+                <label>Student ID</label>
                 <input type="text" id="studentManualId" placeholder="e.g., LS-2024-001 or STU001">
-                <small>Leave empty to auto-generate (e.g., LS-0001, LS-0002)</small>
+                <small>Leave empty to auto-generate</small>
             </div>
             <div class="form-group">
                 <label>Class Level</label>
@@ -401,7 +401,7 @@
                 renderTable(students);
             } catch (error) {
                 console.error('Error:', error);
-                document.getElementById('studentsTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px;">Error loading students</td></tr>';
+                document.getElementById('studentsTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px;">Error loading students</span></td>';
             }
         }
         
@@ -419,7 +419,7 @@
             const tbody = document.getElementById('studentsTableBody');
             
             if (students.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px;">No students found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px;">No students found</span></td>';
                 return;
             }
             
@@ -428,14 +428,14 @@
                 html += `
                     <tr>
                         <td><strong>${escapeHtml(s.student_id)}</strong></td>
-                        <td>${escapeHtml(s.name)}</td>
-                        <td>${formatClassName(s.class_level)}</td>
-                        <td>${s.house || '-'}</td>
-                        <td>${s.gender || '-'}</td>
+                        <td>${escapeHtml(s.name)}</span></td>
+                        <td>${formatClassName(s.class_level)}</span></td>
+                        <td>${s.house || '-'}</span></td>
+                        <td>${s.gender || '-'}</span></td>
                         <td class="action-buttons">
                             <button class="edit-btn" onclick="editStudent(${s.id})">Edit</button>
                             <button class="delete-btn" onclick="deleteStudent(${s.id})">Delete</button>
-                        </td>
+                        </span></td>
                     </tr>
                 `;
             });
@@ -447,6 +447,8 @@
             document.getElementById('studentId').value = '';
             document.getElementById('studentName').value = '';
             document.getElementById('studentManualId').value = '';
+            document.getElementById('studentManualId').readOnly = false;
+            document.getElementById('studentManualId').style.backgroundColor = 'white';
             document.getElementById('studentClass').value = 'KG1';
             document.getElementById('studentHouse').value = '';
             document.getElementById('studentGender').value = 'Male';
@@ -461,13 +463,18 @@
                 document.getElementById('modalTitle').innerText = 'Edit Student';
                 document.getElementById('studentId').value = student.id;
                 document.getElementById('studentName').value = student.name;
-                document.getElementById('studentManualId').value = student.student_id || '';
+                // Make Student ID field EDITABLE - you can change it!
+                const idField = document.getElementById('studentManualId');
+                idField.value = student.student_id || '';
+                idField.readOnly = false;
+                idField.style.backgroundColor = 'white';
+                idField.placeholder = 'Enter new Student ID if needed';
                 document.getElementById('studentClass').value = student.class_level;
                 document.getElementById('studentHouse').value = student.house || '';
                 document.getElementById('studentGender').value = student.gender || 'Male';
                 document.getElementById('studentModal').style.display = 'flex';
             } catch (error) {
-                alert('Error loading student');
+                showToast('Error loading student', 'error');
             }
         }
         
@@ -478,27 +485,41 @@
                 name: document.getElementById('studentName').value,
                 class_level: document.getElementById('studentClass').value,
                 house: document.getElementById('studentHouse').value,
-                gender: document.getElementById('studentGender').value,
-                student_id: manualId || null
+                gender: document.getElementById('studentGender').value
             };
             
             if (!studentData.name) {
-                alert('Please enter student name');
+                showToast('Please enter student name', 'error');
                 return;
+            }
+            
+            // Include student_id for both ADD and EDIT
+            if (manualId) {
+                studentData.student_id = manualId;
             }
             
             try {
                 let response;
                 if (id) {
+                    // EDIT MODE - Update existing student including student_id
+                    console.log('Updating student:', id, studentData);
                     response = await fetch(API_URL + `/api/students/${id}`, {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
                         body: JSON.stringify(studentData)
                     });
                 } else {
+                    // ADD MODE - Create new student
+                    console.log('Adding new student:', studentData);
                     response = await fetch(API_URL + '/api/students', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
                         body: JSON.stringify(studentData)
                     });
                 }
@@ -508,40 +529,68 @@
                 if (response.ok) {
                     closeModal();
                     await loadStudents();
-                    if (result.error) {
-                        alert(result.error);
-                    } else {
-                        alert(id ? 'Student updated!' : 'Student added!');
-                    }
+                    showToast(id ? 'Student updated successfully!' : 'Student added successfully!', 'success');
                 } else {
-                    alert(result.error || 'Error saving student');
+                    showToast(result.error || 'Error saving student', 'error');
                 }
             } catch (error) {
-                alert('Error: ' + error.message);
+                console.error('Save error:', error);
+                showToast('Error: ' + error.message, 'error');
             }
         }
         
         async function deleteStudent(id) {
-            if (confirm('Delete this student? This will also delete all their SBA marks.')) {
+            let studentName = '';
+            try {
+                const response = await fetch(API_URL + `/api/students/${id}`);
+                const student = await response.json();
+                studentName = student.name;
+            } catch (e) {
+                studentName = 'this student';
+            }
+            
+            if (confirm(`⚠️ WARNING: Delete ${studentName}?\n\nThis will permanently delete:\n• Student record\n• All SBA marks\n• All Report Card Data\n• All related records\n\nThis action cannot be undone!`)) {
+                showToast('Deleting student...', 'info');
+                
                 try {
                     const response = await fetch(API_URL + `/api/students/${id}`, {
-                        method: 'DELETE'
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
                     });
+                    
+                    const result = await response.json();
                     
                     if (response.ok) {
                         await loadStudents();
-                        alert('Student deleted!');
+                        showToast('Student deleted successfully!', 'success');
                     } else {
-                        alert('Error deleting student');
+                        showToast(result.error || 'Error deleting student', 'error');
                     }
                 } catch (error) {
-                    alert('Error: ' + error.message);
+                    console.error('Delete error:', error);
+                    showToast('Error: ' + error.message, 'error');
                 }
             }
         }
         
         function closeModal() {
             document.getElementById('studentModal').style.display = 'none';
+        }
+        
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            if (type === 'error') {
+                toast.style.backgroundColor = '#ef4444';
+            } else if (type === 'info') {
+                toast.style.backgroundColor = '#3b82f6';
+            } else {
+                toast.style.backgroundColor = '#10b981';
+            }
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
         }
         
         function logout() {

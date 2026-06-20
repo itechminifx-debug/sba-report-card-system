@@ -275,6 +275,11 @@
                 <h3>Class List</h3>
                 <p>View all students in your class</p>
             </a>
+            <a href="teacher-report-data.html" class="link-card">
+    <div class="icon">📊</div>
+    <h3>Report Card Data</h3>
+    <p>Enter PD, attendance, conduct, remarks</p>
+</a>
         </div>
         
         <div id="noClassMessage" class="loading" style="display: none;">
@@ -325,8 +330,8 @@
             
             // Update links with class parameter
             document.getElementById('sbaLink').href = `teacher-sba.html?class=${selectedClass}`;
-            document.getElementById('reportCardLink').href = `teacher-report-card.html?class=${selectedClass}`;
-            document.getElementById('classListLink').href = `teacher-class-list.html?class=${selectedClass}`;
+document.getElementById('reportCardLink').href = `teacher-report-card.html?class=${selectedClass}`;
+document.getElementById('classListLink').href = `teacher-class-list.html?class=${selectedClass}`;
             
             showToast(`Loading data for ${getClassName(selectedClass)}...`, 'info');
             

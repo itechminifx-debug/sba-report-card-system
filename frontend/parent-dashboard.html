@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Dashboard | Living Spring School</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        body {
+            background: #f0f2f5;
+        }
+        
+        .header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .logo h1 {
+            font-size: 20px;
+            color: #1e293b;
+        }
+        
+        .logo span {
+            color: #10b981;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        .welcome-card {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .form-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #1e293b;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .btn {
+            background: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .btn-print {
+            background: #1e293b;
+            margin-top: 20px;
+        }
+        
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .report-card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        
+        .report-header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #10b981;
+        }
+        
+        .report-header h1 {
+            font-size: 24px;
+            color: #1e293b;
+        }
+        
+        .report-header h2 {
+            font-size: 16px;
+            color: #10b981;
+            margin-top: 5px;
+        }
+        
+        .school-address {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+        
+        .student-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .dates-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+        
+        .subjects-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+            font-size: 13px;
+        }
+        
+        .subjects-table th {
+            background: #10b981;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        .subjects-table td {
+            padding: 8px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        
+        .subjects-table td:first-child {
+            text-align: left;
+        }
+        
+        .total-row {
+            background: #f8fafc;
+            font-weight: 600;
+        }
+        
+        .personal-dev {
+            margin: 25px 0;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+        
+        .personal-dev h4 {
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        
+        .dev-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .dev-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .attendance-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+        
+        .conduct-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+        
+        .remarks-box {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+        
+        .signature-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .grade-A { color: #065f46; font-weight: bold; }
+        .grade-B { color: #1e40af; font-weight: bold; }
+        .grade-C { color: #92400e; font-weight: bold; }
+        .grade-D { color: #9a3412; font-weight: bold; }
+        .grade-E { color: #991b1b; font-weight: bold; }
+        .grade-F { color: #7f1d1d; font-weight: bold; }
+        
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #64748b;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #10b981;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @media print {
+            .header, .form-card, .btn, .logout-btn, .no-print {
+                display: none !important;
+            }
+            .report-card {
+                box-shadow: none;
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header { flex-direction: column; text-align: center; }
+            .student-info, .dates-row, .attendance-row, .conduct-row { grid-template-columns: 1fr; }
+            .dev-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <h1>Living Spring <span>Adventist Academy</span></h1>
+        </div>
+        <div class="user-info">
+            <span id="parentName">Parent</span>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="welcome-card">
+            <h1>Welcome, <span id="welcomeName">Parent</span>! 👨‍👩‍👧</h1>
+            <p>Enter your child's Student ID and Name to view their complete academic report</p>
+        </div>
+        
+        <div class="form-card">
+            <h2>🔍 Access Child's Full Report Card</h2>
+            
+            <div id="errorMsg" class="error-message"></div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Student ID</label>
+                    <input type="text" id="studentId" placeholder="e.g., LS-0001" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Student Name</label>
+                    <input type="text" id="studentName" placeholder="Enter student's full name" autocomplete="off">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Term</label>
+                    <select id="termSelect">
+                        <option value="1">First Term</option>
+                        <option value="2">Second Term</option>
+                        <option value="3">Third Term</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Academic Year</label>
+                    <input type="text" id="academicYear" value="2025/2026">
+                </div>
+            </div>
+            
+            <button class="btn" onclick="fetchFullReport()">📄 View Full Report Card</button>
+        </div>
+        
+        <div id="reportContainer"></div>
+    </div>
+
+    <script>
+        const API_URL = '';
+        let parentToken = null;
+        
+        parentToken = localStorage.getItem('parentToken');
+        if (!parentToken) {
+            window.location.href = 'parent-login.html';
+        }
+        
+        const parent = JSON.parse(localStorage.getItem('parent') || '{}');
+        document.getElementById('parentName').innerText = parent.name || 'Parent';
+        document.getElementById('welcomeName').innerText = parent.name || 'Parent';
+        
+        function getClassName(classLevel) {
+            const classes = {
+                'KG1': 'KG 1', 'KG2': 'KG 2',
+                'P1': 'Primary 1', 'P2': 'Primary 2', 'P3': 'Primary 3',
+                'P4': 'Primary 4', 'P5': 'Primary 5', 'P6': 'Primary 6',
+                'JHS1': 'JHS 1', 'JHS2': 'JHS 2', 'JHS3': 'JHS 3'
+            };
+            return classes[classLevel] || classLevel;
+        }
+        
+        function getGradeInfo(score, settings) {
+            if (score >= 80) return { grade: 'A', remark: settings.grade_a_remark || 'Excellent' };
+            if (score >= 70) return { grade: 'B', remark: settings.grade_b_remark || 'Very Good' };
+            if (score >= 60) return { grade: 'C', remark: settings.grade_c_remark || 'Good' };
+            if (score >= 50) return { grade: 'D', remark: settings.grade_d_remark || 'Satisfactory' };
+            if (score >= 40) return { grade: 'E', remark: settings.grade_e_remark || 'Weak' };
+            return { grade: 'F', remark: settings.grade_f_remark || 'Fail' };
+        }
+        
+        async function fetchFullReport() {
+            const studentId = document.getElementById('studentId').value.trim();
+            const studentName = document.getElementById('studentName').value.trim();
+            const term = document.getElementById('termSelect').value;
+            const academicYear = document.getElementById('academicYear').value;
+            const errorMsg = document.getElementById('errorMsg');
+            
+            errorMsg.style.display = 'none';
+            
+            if (!studentId || !studentName) {
+                errorMsg.innerText = 'Please enter both Student ID and Student Name';
+                errorMsg.style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('reportContainer').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading full report card...</p></div>';
+            
+            try {
+                const response = await fetch(API_URL + `/api/parent/full-report?student_id=${encodeURIComponent(studentId)}&student_name=${encodeURIComponent(studentName)}&term=${term}&academic_year=${academicYear}`, {
+                    headers: { 'Authorization': `Bearer ${parentToken}` }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    renderFullReportCard(data, term, academicYear);
+                } else {
+                    errorMsg.innerText = data.message || 'Student not found. Please check the Student ID and Name.';
+                    errorMsg.style.display = 'block';
+                    document.getElementById('reportContainer').innerHTML = '';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorMsg.innerText = 'Error loading report. Please try again.';
+                errorMsg.style.display = 'block';
+                document.getElementById('reportContainer').innerHTML = '';
+            }
+        }
+        
+        function renderFullReportCard(data, term, academicYear) {
+            let student = data.student;
+            let subjects = data.subjects;
+            const sbaMarks = data.sbaMarks;
+            const reportData = data.reportData || {};
+            const settings = data.settings || {};
+            const personalDevTraits = data.personalDevTraits || [];
+            const subjectPositions = data.subjectPositions || {};
+            const overallPosition = data.overallPosition || 0;
+            const totalStudents = data.totalStudents || 0;
+            
+            // FIX: Remove duplicate subjects
+            const uniqueSubjects = [];
+            const subjectNames = new Set();
+            for (const subject of subjects) {
+                if (!subjectNames.has(subject.name)) {
+                    subjectNames.add(subject.name);
+                    uniqueSubjects.push(subject);
+                }
+            }
+            subjects = uniqueSubjects;
+            
+            const termText = term === '1' ? 'First Term' : (term === '2' ? 'Second Term' : 'Third Term');
+            const className = getClassName(student.class_level);
+            
+            // Calculate average
+            let totalScore = 0;
+            let subjectCount = 0;
+            for (const subject of subjects) {
+                const mark = sbaMarks.find(m => m.subject_id === subject.id);
+                if (mark && mark.total) {
+                    totalScore += parseFloat(mark.total);
+                    subjectCount++;
+                }
+            }
+            const average = subjectCount > 0 ? (totalScore / subjectCount).toFixed(1) : 0;
+            const overallGradeInfo = getGradeInfo(parseFloat(average), settings);
+            
+            // Build subjects table
+            let subjectsHtml = '';
+            for (const subject of subjects) {
+                const mark = sbaMarks.find(m => m.subject_id === subject.id);
+                const classScore = mark ? (parseFloat(mark.class_score) || 0) : 0;
+                const examScore = mark ? (parseFloat(mark.exam_score) || 0) : 0;
+                const total = mark ? (parseFloat(mark.total) || 0) : 0;
+                const gradeInfo = getGradeInfo(total, settings);
+                const position = subjectPositions[subject.id] || 0;
+                
+                subjectsHtml += `
+                    <tr>
+                        <td style="text-align: left;"><strong>${escapeHtml(subject.name)}</strong></td>
+                        <td>${classScore.toFixed(1)}%</td>
+                        <td>${examScore.toFixed(1)}%</td>
+                        <td><strong>${total.toFixed(1)}%</strong></td>
+                        <td><strong class="grade-${gradeInfo.grade}">${gradeInfo.grade}</strong></td>
+                        <td>${position}${getOrdinal(position)}</td>
+                        <td>${gradeInfo.remark}</td>
+                    </tr>
+                `;
+            }
+            
+            // Personal Development
+            let devHtml = '';
+            for (let i = 0; i < personalDevTraits.length; i++) {
+                const grade = reportData[`pd_${i}`] || '—';
+                devHtml += `<div class="dev-item"><span>${personalDevTraits[i]}:</span><span><strong>${grade}</strong></span></div>`;
+            }
+            
+            // Logo display
+            const logoDisplay = settings.logo_url && (settings.logo_url.startsWith('http') || settings.logo_url.startsWith('/')) 
+                ? `<img src="${settings.logo_url}" style="max-height: 60px; margin-bottom: 10px;">` 
+                : `<div style="font-size: 40px;">${settings.logo_url || '🏫'}</div>`;
+            
+            const reportHtml = `
+                <div class="report-card">
+                    <div class="report-header">
+                        ${logoDisplay}
+                        <h1>${escapeHtml(settings.school_name || 'Living Spring Adventist Academy')}</h1>
+                        <h2>END OF ${termText.toUpperCase()} REPORT CARD</h2>
+                        <div class="school-address">${escapeHtml(settings.school_address || 'P.O. Box 123, Accra - Ghana')}</div>
+                        <div class="school-address">📧 ${settings.school_email || 'info@livingspring.edu.gh'} | 📞 ${settings.school_phone || '+233 XX XXX XXXX'}</div>
+                        <div class="school-address">Motto: ${escapeHtml(settings.school_motto || 'Excellence in Education')}</div>
+                    </div>
+                    
+                    <div class="student-info">
+                        <div><span class="info-label">Student Name:</span> ${escapeHtml(student.name)}</div>
+                        <div><span class="info-label">Student ID:</span> ${student.student_id}</div>
+                        <div><span class="info-label">Class:</span> ${className}</div>
+                        <div><span class="info-label">House:</span> ${student.house || 'Not Assigned'}</div>
+                        <div><span class="info-label">Number on Roll:</span> ${totalStudents}</div>
+                        <div><span class="info-label">Overall Position:</span> ${overallPosition} out of ${totalStudents}</div>
+                    </div>
+                    
+                    <div class="dates-row">
+                        <div><span class="info-label">Term Begins:</span> ${settings.term_begins || '_____________'}</div>
+                        <div><span class="info-label">Term Ends:</span> ${settings.term_ends || '_____________'}</div>
+                        <div><span class="info-label">Next Term Reopens:</span> ${settings.next_term_reopens || '_____________'}</div>
+                    </div>
+                    
+                    <table class="subjects-table">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Class Score (50%)</th>
+                                <th>Exam Score (50%)</th>
+                                <th>Total (100%)</th>
+                                <th>Grade</th>
+                                <th>Position</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${subjectsHtml}
+                            <tr class="total-row">
+                                <td colspan="3"><strong>Overall Average</strong></td>
+                                <td><strong>${average}%</strong></td>
+                                <td><strong>${overallGradeInfo.grade}</strong></td>
+                                <td colspan="2">—</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="personal-dev">
+                        <h4>📋 Personal Development</h4>
+                        <div class="dev-grid">
+                            ${devHtml}
+                        </div>
+                    </div>
+                    
+                    <div class="attendance-row">
+                        <div><span class="info-label">Total Attendance:</span> ${reportData.attendance_present || '___'} out of ${reportData.attendance_total || '___'} days</div>
+                        <div><span class="info-label">Promoted to:</span> ${escapeHtml(reportData.promoted_to || '_____________')}</div>
+                        <div><span class="info-label">Academic Year:</span> ${academicYear}</div>
+                    </div>
+                    
+                    <div class="conduct-row">
+                        <div><span class="info-label">Conduct:</span> ${escapeHtml(reportData.conduct || '_____________')}</div>
+                        <div><span class="info-label">Interest:</span> ${escapeHtml(reportData.interest || '_____________')}</div>
+                    </div>
+                    
+                    <div class="remarks-box">
+                        <div><span class="info-label">Class Teacher's Remarks:</span> ${escapeHtml(reportData.teacher_remarks || '_________________________________')}</div>
+                        <div style="margin-top: 10px;"><span class="info-label">Headteacher's Remarks:</span> ${escapeHtml(reportData.headteacher_remarks || '_________________________________')}</div>
+                    </div>
+                    
+                    <div class="signature-row">
+                        <div>
+                            <p>Class Teacher's Signature: ___________________</p>
+                            <p>Date: ___________</p>
+                        </div>
+                        <div>
+                            <p>Headteacher's Signature: ___________________</p>
+                            <p>Date: ___________</p>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; text-align: center; font-size: 10px; color: #64748b;">
+                        <p>Parent Portal - Generated on ${new Date().toLocaleDateString()}</p>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="btn btn-print" onclick="window.print()">🖨️ Print Report Card</button>
+                </div>
+            `;
+            
+            document.getElementById('reportContainer').innerHTML = reportHtml;
+        }
+        
+        function getOrdinal(n) {
+            if (n === 1) return 'st';
+            if (n === 2) return 'nd';
+            if (n === 3) return 'rd';
+            return 'th';
+        }
+        
+        function logout() {
+            localStorage.removeItem('parentToken');
+            localStorage.removeItem('parent');
+            window.location.href = 'parent-login.html';
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+    </script>
+</body>
+</html>

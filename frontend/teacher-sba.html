@@ -79,6 +79,18 @@
             margin-bottom: 20px;
         }
         
+        .info-bar {
+            background: #fef3c7;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
         .filter-bar {
             display: flex;
             gap: 15px;
@@ -100,12 +112,12 @@
             text-transform: uppercase;
         }
         
-        .filter-group select {
+        .filter-group select, .filter-group input {
             padding: 10px 15px;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
             font-size: 14px;
-            min-width: 150px;
+            min-width: 180px;
         }
         
         .btn {
@@ -121,10 +133,6 @@
         
         .btn-success {
             background: #10b981;
-        }
-        
-        .btn-warning {
-            background: #f59e0b;
         }
         
         .table-container {
@@ -234,7 +242,7 @@
         </div>
         <div class="user-info">
             <span id="teacherName">Teacher</span>
-            <a href="teacher-dashboard.html" class="back-btn">← Back</a>
+            <a href="teacher-dashboard.html" class="back-btn">← Dashboard</a>
             <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
     </div>
@@ -243,11 +251,16 @@
         <div class="card">
             <h2>📝 SBA Entry - School Based Assessment</h2>
             
+            <div class="info-bar" id="classInfo">
+                <span><strong>Class:</strong> <span id="displayClass">Loading...</span></span>
+                <span><strong>Students:</strong> <span id="studentCount">0</span></span>
+            </div>
+            
             <div class="filter-bar">
                 <div class="filter-group">
-                    <label>Subject</label>
+                    <label>Select Subject</label>
                     <select id="subjectSelect">
-                        <option value="">Loading subjects...</option>
+                        <option value="">-- Select Subject --</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -268,7 +281,7 @@
             <div id="marksTableContainer">
                 <div class="loading">
                     <div class="spinner"></div>
-                    <p>Select subject to begin</p>
+                    <p>Select a subject and click "Load Students"</p>
                 </div>
             </div>
             
@@ -286,8 +299,20 @@
         let students = [];
         let subjects = [];
         let marksData = {};
-        let teacher = null;
         let teacherToken = null;
+        let teacher = null;
+        let currentClass = null;
+        
+        // Get class from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        currentClass = urlParams.get('class') || localStorage.getItem('teacherSelectedClass');
+        
+        if (!currentClass) {
+            showToast('No class selected. Redirecting to dashboard...', 'error');
+            setTimeout(() => {
+                window.location.href = 'teacher-dashboard.html';
+            }, 2000);
+        }
         
         // Check teacher login
         teacherToken = localStorage.getItem('teacherToken');
@@ -297,6 +322,19 @@
         
         teacher = JSON.parse(localStorage.getItem('teacher') || '{}');
         document.getElementById('teacherName').innerText = teacher.name || 'Teacher';
+        
+        // Display class name
+        function getClassName(classLevel) {
+            const classes = {
+                'KG1': 'KG 1', 'KG2': 'KG 2',
+                'P1': 'Primary 1', 'P2': 'Primary 2', 'P3': 'Primary 3',
+                'P4': 'Primary 4', 'P5': 'Primary 5', 'P6': 'Primary 6',
+                'JHS1': 'JHS 1', 'JHS2': 'JHS 2', 'JHS3': 'JHS 3'
+            };
+            return classes[classLevel] || classLevel;
+        }
+        
+        document.getElementById('displayClass').innerText = getClassName(currentClass);
         
         // Load saved settings
         const savedYear = localStorage.getItem('academicYear');
@@ -318,42 +356,21 @@
             return { grade: 'F', remark: 'Fail' };
         }
         
-        function calculateAndDisplayTotals(rowId) {
-            const test1 = parseFloat(document.getElementById(`test1_${rowId}`)?.value) || 0;
-            const groupWork = parseFloat(document.getElementById(`group_${rowId}`)?.value) || 0;
-            const midTerm = parseFloat(document.getElementById(`mid_${rowId}`)?.value) || 0;
-            const project = parseFloat(document.getElementById(`project_${rowId}`)?.value) || 0;
-            const exam = parseFloat(document.getElementById(`exam_${rowId}`)?.value) || 0;
-            
-            const subTotal = test1 + groupWork + midTerm + project;
-            const classScore = (subTotal / 60) * 50;
-            const examScore = (exam / 100) * 50;
-            const total = classScore + examScore;
-            const gradeInfo = getGrade(total);
-            
-            document.getElementById(`subtotal_${rowId}`).innerHTML = `<strong>${Math.round(subTotal * 100) / 100}</strong>`;
-            document.getElementById(`classScore_${rowId}`).innerHTML = `<strong>${Math.round(classScore * 100) / 100}</strong>`;
-            document.getElementById(`examScore_${rowId}`).innerHTML = `<strong>${Math.round(examScore * 100) / 100}</strong>`;
-            document.getElementById(`total_${rowId}`).innerHTML = `<strong>${Math.round(total * 100) / 100}</strong>`;
-            document.getElementById(`grade_${rowId}`).innerHTML = `<strong>${gradeInfo.grade}</strong>`;
-            document.getElementById(`remarks_${rowId}`).innerHTML = gradeInfo.remark;
-            
-            return { test1, groupWork, midTerm, project, exam, subTotal, classScore, examScore, total, grade: gradeInfo.grade, remark: gradeInfo.remark };
-        }
-        
-        // Load subjects for teacher's class
+        // Load subjects for the selected class
         async function loadSubjects() {
             try {
-                const response = await fetch(API_URL + `/api/teacher/subjects?class_level=${teacher.assigned_class}`, {
+                console.log('Loading subjects for class:', currentClass);
+                const response = await fetch(API_URL + `/api/teacher/subjects?class_level=${currentClass}`, {
                     headers: { 'Authorization': `Bearer ${teacherToken}` }
                 });
                 subjects = await response.json();
+                console.log('Subjects loaded:', subjects);
                 
                 const subjectSelect = document.getElementById('subjectSelect');
                 if (subjects.length === 0) {
                     subjectSelect.innerHTML = '<option value="">No subjects found</option>';
                 } else {
-                    let html = '<option value="">Select Subject</option>';
+                    let html = '<option value="">-- Select Subject --</option>';
                     const uniqueSubjects = new Map();
                     for (const s of subjects) {
                         if (!uniqueSubjects.has(s.name)) {
@@ -368,6 +385,7 @@
             } catch (error) {
                 console.error('Error loading subjects:', error);
                 document.getElementById('subjectSelect').innerHTML = '<option value="">Error loading subjects</option>';
+                showToast('Error loading subjects', 'error');
             }
         }
         
@@ -385,20 +403,25 @@
             document.getElementById('actionButtons').style.display = 'none';
             
             try {
-                // Load students for teacher's class
-                const studentsRes = await fetch(API_URL + `/api/teacher/students?class_level=${teacher.assigned_class}`, {
+                // Load students for the selected class
+                console.log('Loading students for class:', currentClass);
+                const studentsRes = await fetch(API_URL + `/api/teacher/students?class_level=${currentClass}`, {
                     headers: { 'Authorization': `Bearer ${teacherToken}` }
                 });
                 students = await studentsRes.json();
+                console.log('Students loaded:', students);
+                
+                document.getElementById('studentCount').innerText = students.length;
                 
                 if (students.length === 0) {
-                    document.getElementById('marksTableContainer').innerHTML = '<div class="loading"><p>No students found in your class</p></div>';
+                    document.getElementById('marksTableContainer').innerHTML = '<div class="loading"><p>No students found in this class</p></div>';
                     return;
                 }
                 
                 // Load existing marks
                 const marksRes = await fetch(API_URL + `/api/sba?subject_id=${subjectId}&term=${term}&academic_year=${academicYear}`);
                 const existingMarks = await marksRes.json();
+                console.log('Existing marks loaded:', existingMarks);
                 
                 marksData = {};
                 existingMarks.forEach(m => {
@@ -409,14 +432,15 @@
                 document.getElementById('actionButtons').style.display = 'flex';
             } catch (error) {
                 console.error('Error loading data:', error);
-                document.getElementById('marksTableContainer').innerHTML = '<div class="loading"><p>Error loading data</p></div>';
+                document.getElementById('marksTableContainer').innerHTML = '<div class="loading"><p>Error loading data: ' + error.message + '</p></div>';
+                showToast('Error loading data: ' + error.message, 'error');
             }
         }
         
         function renderMarksTable() {
             let html = `
                 <div class="table-container">
-                    <table>
+                    <table id="sbaTable">
                         <thead>
                             <tr>
                                 <th>Student Name</th>
@@ -440,20 +464,33 @@
                 const existing = marksData[student.id] || {};
                 const rowId = student.id;
                 
+                // Calculate totals
+                const test1 = existing.test1 || 0;
+                const groupWork = existing.group_work || 0;
+                const midTerm = existing.mid_term || 0;
+                const project = existing.project || 0;
+                const exam = existing.exam || 0;
+                
+                const subTotal = test1 + groupWork + midTerm + project;
+                const classScore = (subTotal / 60) * 50;
+                const examScore = (exam / 100) * 50;
+                const total = classScore + examScore;
+                const gradeInfo = getGrade(total);
+                
                 html += `
-                    <tr>
+                    <tr data-student-id="${student.id}" id="row_${rowId}">
                         <td><strong>${escapeHtml(student.name)}</strong></td>
-                        <td><input type="number" id="test1_${rowId}" value="${existing.test1 || 0}" min="0" max="15" step="0.5" onchange="calculateAndDisplayTotals(${rowId})"></td>
-                        <td><input type="number" id="group_${rowId}" value="${existing.group_work || 0}" min="0" max="15" step="0.5" onchange="calculateAndDisplayTotals(${rowId})"></td>
-                        <td><input type="number" id="mid_${rowId}" value="${existing.mid_term || 0}" min="0" max="15" step="0.5" onchange="calculateAndDisplayTotals(${rowId})"></td>
-                        <td><input type="number" id="project_${rowId}" value="${existing.project || 0}" min="0" max="15" step="0.5" onchange="calculateAndDisplayTotals(${rowId})"></td>
-                        <td class="total-cell" id="subtotal_${rowId}">${existing.sub_total || 0}</td>
-                        <td class="total-cell" id="classScore_${rowId}">${existing.class_score || 0}</td>
-                        <td><input type="number" id="exam_${rowId}" value="${existing.exam || 0}" min="0" max="100" step="0.5" onchange="calculateAndDisplayTotals(${rowId})"></td>
-                        <td class="total-cell" id="examScore_${rowId}">${existing.exam_score || 0}</td>
-                        <td class="total-cell" id="total_${rowId}">${existing.total || 0}</td>
-                        <td class="grade-cell" id="grade_${rowId}">${existing.grade || '-'}</td>
-                        <td id="remarks_${rowId}">${existing.remarks || '-'}</td>
+                        <td><input type="number" id="test1_${rowId}" value="${test1}" min="0" max="15" step="0.5" onchange="updateTotals(${rowId})"></td>
+                        <td><input type="number" id="group_${rowId}" value="${groupWork}" min="0" max="15" step="0.5" onchange="updateTotals(${rowId})"></td>
+                        <td><input type="number" id="mid_${rowId}" value="${midTerm}" min="0" max="15" step="0.5" onchange="updateTotals(${rowId})"></td>
+                        <td><input type="number" id="project_${rowId}" value="${project}" min="0" max="15" step="0.5" onchange="updateTotals(${rowId})"></td>
+                        <td class="total-cell" id="subtotal_${rowId}">${Math.round(subTotal * 100) / 100}</td>
+                        <td class="total-cell" id="classScore_${rowId}">${Math.round(classScore * 100) / 100}</td>
+                        <td><input type="number" id="exam_${rowId}" value="${exam}" min="0" max="100" step="0.5" onchange="updateTotals(${rowId})"></td>
+                        <td class="total-cell" id="examScore_${rowId}">${Math.round(examScore * 100) / 100}</td>
+                        <td class="total-cell" id="total_${rowId}">${Math.round(total * 100) / 100}</td>
+                        <td class="grade-cell" id="grade_${rowId}"><strong>${gradeInfo.grade}</strong></td>
+                        <td id="remarks_${rowId}">${gradeInfo.remark}</td>
                     </tr>
                 `;
             }
@@ -465,10 +502,34 @@
             `;
             
             document.getElementById('marksTableContainer').innerHTML = html;
+        }
+        
+        function updateTotals(rowId) {
+            const test1 = parseFloat(document.getElementById(`test1_${rowId}`)?.value) || 0;
+            const groupWork = parseFloat(document.getElementById(`group_${rowId}`)?.value) || 0;
+            const midTerm = parseFloat(document.getElementById(`mid_${rowId}`)?.value) || 0;
+            const project = parseFloat(document.getElementById(`project_${rowId}`)?.value) || 0;
+            const exam = parseFloat(document.getElementById(`exam_${rowId}`)?.value) || 0;
             
-            for (const student of students) {
-                calculateAndDisplayTotals(student.id);
-            }
+            const subTotal = test1 + groupWork + midTerm + project;
+            const classScore = (subTotal / 60) * 50;
+            const examScore = (exam / 100) * 50;
+            const total = classScore + examScore;
+            const gradeInfo = getGrade(total);
+            
+            const subtotalElem = document.getElementById(`subtotal_${rowId}`);
+            const classScoreElem = document.getElementById(`classScore_${rowId}`);
+            const examScoreElem = document.getElementById(`examScore_${rowId}`);
+            const totalElem = document.getElementById(`total_${rowId}`);
+            const gradeElem = document.getElementById(`grade_${rowId}`);
+            const remarksElem = document.getElementById(`remarks_${rowId}`);
+            
+            if (subtotalElem) subtotalElem.innerHTML = Math.round(subTotal * 100) / 100;
+            if (classScoreElem) classScoreElem.innerHTML = Math.round(classScore * 100) / 100;
+            if (examScoreElem) examScoreElem.innerHTML = Math.round(examScore * 100) / 100;
+            if (totalElem) totalElem.innerHTML = Math.round(total * 100) / 100;
+            if (gradeElem) gradeElem.innerHTML = `<strong>${gradeInfo.grade}</strong>`;
+            if (remarksElem) remarksElem.innerHTML = gradeInfo.remark;
         }
         
         async function saveAllMarks() {
@@ -551,6 +612,7 @@
                     }
                 } catch (error) {
                     errorCount++;
+                    console.error('Error saving student:', student.name, error);
                 }
             }
             
@@ -576,6 +638,7 @@
         function logout() {
             localStorage.removeItem('teacherToken');
             localStorage.removeItem('teacher');
+            localStorage.removeItem('teacherSelectedClass');
             window.location.href = 'teacher-login.html';
         }
         

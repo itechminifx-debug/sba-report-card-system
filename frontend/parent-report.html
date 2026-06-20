@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Child Report | Parent Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        body {
+            background: #f0f2f5;
+        }
+        
+        .header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .logo h1 {
+            font-size: 20px;
+            color: #1e293b;
+        }
+        
+        .logo span {
+            color: #10b981;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .back-btn {
+            background: #64748b;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        .filter-bar {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-group label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #1e293b;
+            text-transform: uppercase;
+        }
+        
+        .filter-group select, .filter-group input {
+            padding: 10px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 150px;
+        }
+        
+        .btn {
+            background: #10b981;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .btn-print {
+            background: #1e293b;
+        }
+        
+        /* Report Card Styles */
+        .report-card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .report-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #10b981;
+        }
+        
+        .report-header h1 {
+            font-size: 22px;
+            color: #1e293b;
+        }
+        
+        .report-header h2 {
+            font-size: 16px;
+            color: #10b981;
+            margin-top: 5px;
+        }
+        
+        .student-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .subjects-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 12px;
+        }
+        
+        .subjects-table th {
+            background: #10b981;
+            color: white;
+            padding: 8px 6px;
+            text-align: center;
+            font-size: 11px;
+        }
+        
+        .subjects-table td {
+            padding: 6px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        
+        .subjects-table td:first-child {
+            text-align: left;
+        }
+        
+        .total-row {
+            background: #f8fafc;
+            font-weight: 600;
+        }
+        
+        .grade-A { color: #065f46; font-weight: bold; }
+        .grade-B { color: #1e40af; font-weight: bold; }
+        .grade-C { color: #92400e; font-weight: bold; }
+        .grade-D { color: #9a3412; font-weight: bold; }
+        .grade-E { color: #991b1b; font-weight: bold; }
+        .grade-F { color: #7f1d1d; font-weight: bold; }
+        
+        .personal-dev {
+            margin: 20px 0;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .dev-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .dev-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .attendance-section {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 15px 0;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .conduct-interest {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 15px 0;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .remarks-section {
+            margin: 15px 0;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #64748b;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #10b981;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @media print {
+            .header, .filter-bar, .action-buttons, .back-btn, .logout-btn, .btn, .no-print {
+                display: none !important;
+            }
+            body { background: white; padding: 0; margin: 0; }
+        }
+        
+        @media (max-width: 768px) {
+            .header { flex-direction: column; text-align: center; }
+            .student-info, .attendance-section, .conduct-interest { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <h1>Living Spring <span>Adventist Academy</span></h1>
+        </div>
+        <div class="user-info">
+            <span id="parentName">Parent</span>
+            <a href="parent-dashboard.html" class="back-btn">← Back</a>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="filter-bar no-print">
+            <div class="filter-group">
+                <label>Select Child</label>
+                <select id="childSelect">
+                    <option value="">Loading children...</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Term</label>
+                <select id="termSelect">
+                    <option value="1">Term 1</option>
+                    <option value="2">Term 2</option>
+                    <option value="3">Term 3</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Academic Year</label>
+                <input type="text" id="academicYear" value="2025/2026" style="width: 120px;">
+            </div>
+            <button class="btn" onclick="loadReport()">View Report</button>
+            <button class="btn btn-print" onclick="printReport()">🖨️ Print</button>
+        </div>
+        
+        <div id="reportContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Select a child and click "View Report"</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '';
+        let parentToken = null;
+        let children = [];
+        
+        parentToken = localStorage.getItem('parentToken');
+        if (!parentToken) {
+            window.location.href = 'parent-login.html';
+        }
+        
+        const parent = JSON.parse(localStorage.getItem('parent') || '{}');
+        document.getElementById('parentName').innerText = parent.name || 'Parent';
+        
+        // Load children into dropdown
+        async function loadChildren() {
+            try {
+                const response = await fetch(API_URL + '/api/parent/children', {
+                    headers: { 'Authorization': `Bearer ${parentToken}` }
+                });
+                children = await response.json();
+                
+                const childSelect = document.getElementById('childSelect');
+                if (children.length === 0) {
+                    childSelect.innerHTML = '<option value="">No children found</option>';
+                } else {
+                    let html = '<option value="">-- Select Child --</option>';
+                    children.forEach(child => {
+                        html += `<option value="${child.id}">${escapeHtml(child.name)} (${child.student_id})</option>`;
+                    });
+                    childSelect.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Error loading children:', error);
+            }
+        }
+        
+        async function loadReport() {
+            const childId = document.getElementById('childSelect').value;
+            const term = document.getElementById('termSelect').value;
+            const academicYear = document.getElementById('academicYear').value;
+            
+            if (!childId) {
+                alert('Please select a child');
+                return;
+            }
+            
+            document.getElementById('reportContainer').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading report...</p></div>';
+            
+            try {
+                const response = await fetch(API_URL + `/api/parent/child/${childId}/report?term=${term}&academic_year=${academicYear}`, {
+                    headers: { 'Authorization': `Bearer ${parentToken}` }
+                });
+                const data = await response.json();
+                
+                renderReport(data, term, academicYear);
+            } catch (error) {
+                console.error('Error loading report:', error);
+                document.getElementById('reportContainer').innerHTML = '<div class="loading"><p>Error loading report. Please try again.</p></div>';
+            }
+        }
+        
+        function renderReport(data, term, academicYear) {
+            const student = data.student;
+            const subjects = data.subjects;
+            const sbaMarks = data.sbaMarks;
+            const reportData = data.reportData;
+            
+            const termText = term === '1' ? 'First Term' : (term === '2' ? 'Second Term' : 'Third Term');
+            const className = getClassName(student.class_level);
+            
+            // Calculate subject performance
+            let subjectsHtml = '';
+            let totalScore = 0;
+            let subjectCount = 0;
+            
+            for (const subject of subjects) {
+                const mark = sbaMarks.find(m => m.subject_id === subject.id);
+                const total = mark ? (parseFloat(mark.total) || 0) : 0;
+                totalScore += total;
+                subjectCount++;
+                
+                let grade = '';
+                if (total >= 80) grade = 'A';
+                else if (total >= 70) grade = 'B';
+                else if (total >= 60) grade = 'C';
+                else if (total >= 50) grade = 'D';
+                else if (total >= 40) grade = 'E';
+                else grade = 'F';
+                
+                let gradeRemark = '';
+                if (total >= 80) gradeRemark = 'Excellent';
+                else if (total >= 70) gradeRemark = 'Very Good';
+                else if (total >= 60) gradeRemark = 'Good';
+                else if (total >= 50) gradeRemark = 'Satisfactory';
+                else if (total >= 40) gradeRemark = 'Weak';
+                else gradeRemark = 'Fail';
+                
+                subjectsHtml += `
+                    <tr>
+                        <td>${escapeHtml(subject.name)}</span></td>
+                        <td><strong>${total.toFixed(1)}%</strong></td>
+                        <td><strong class="grade-${grade}">${grade}</strong></td>
+                        <td>${gradeRemark}</span></td>
+                    </tr>
+                `;
+            }
+            
+            const average = subjectCount > 0 ? (totalScore / subjectCount).toFixed(1) : 0;
+            let overallGrade = '';
+            if (average >= 80) overallGrade = 'A';
+            else if (average >= 70) overallGrade = 'B';
+            else if (average >= 60) overallGrade = 'C';
+            else if (average >= 50) overallGrade = 'D';
+            else if (average >= 40) overallGrade = 'E';
+            else overallGrade = 'F';
+            
+            // Personal Development traits based on class
+            const traits = getPersonalDevTraits(student.class_level);
+            let devHtml = '';
+            for (let i = 0; i < traits.length; i++) {
+                const grade = reportData[`pd_${i}`] || '—';
+                devHtml += `<div class="dev-item"><span>${traits[i]}:</span><span><strong>${grade}</strong></span></div>`;
+            }
+            
+            const attendancePresent = reportData.attendance_present || '___';
+            const attendanceTotal = reportData.attendance_total || '___';
+            const promotedTo = reportData.promoted_to || '_____________';
+            const conduct = reportData.conduct || '_____________';
+            const interest = reportData.interest || '_____________';
+            const teacherRemarks = reportData.teacher_remarks || '_________________________________';
+            const headteacherRemarks = reportData.headteacher_remarks || '_________________________________';
+            
+            const settings = {
+                name: localStorage.getItem('schoolName') || 'Living Spring Adventist Academy',
+                address: localStorage.getItem('schoolAddress') || 'P.O. Box 123, Accra - Ghana',
+                motto: localStorage.getItem('schoolMotto') || 'Excellence in Education'
+            };
+            
+            const reportHtml = `
+                <div class="report-card">
+                    <div class="report-header">
+                        <h1>${escapeHtml(settings.name)}</h1>
+                        <h2>END OF ${termText.toUpperCase()} REPORT CARD</h2>
+                        <div class="school-address">${escapeHtml(settings.address)}</div>
+                        <div class="school-address">Motto: ${escapeHtml(settings.motto)}</div>
+                    </div>
+                    
+                    <div class="student-info">
+                        <div><span class="info-label">Student Name:</span> ${escapeHtml(student.name)}</div>
+                        <div><span class="info-label">Student ID:</span> ${student.student_id}</div>
+                        <div><span class="info-label">Class:</span> ${className}</div>
+                        <div><span class="info-label">House:</span> ${student.house || 'Not Assigned'}</div>
+                        <div><span class="info-label">Academic Year:</span> ${academicYear}</div>
+                    </div>
+                    
+                    <table class="subjects-table">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Score (%)</th>
+                                <th>Grade</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${subjectsHtml}
+                            <tr class="total-row">
+                                <td><strong>Overall Average</strong></td>
+                                <td><strong>${average}%</strong></td>
+                                <td><strong>${overallGrade}</strong></td>
+                                <td>—</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="personal-dev">
+                        <h4>📋 Personal Development</h4>
+                        <div class="dev-grid">
+                            ${devHtml}
+                        </div>
+                    </div>
+                    
+                    <div class="attendance-section">
+                        <div><span class="info-label">Total Attendance:</span> ${attendancePresent} out of ${attendanceTotal} days</div>
+                        <div><span class="info-label">Promoted to:</span> ${escapeHtml(promotedTo)}</div>
+                    </div>
+                    
+                    <div class="conduct-interest">
+                        <div><span class="info-label">Conduct:</span> ${escapeHtml(conduct)}</div>
+                        <div><span class="info-label">Interest:</span> ${escapeHtml(interest)}</div>
+                    </div>
+                    
+                    <div class="remarks-section">
+                        <div><span class="info-label">Class Teacher's Remarks:</span> ${escapeHtml(teacherRemarks)}</div>
+                        <div style="margin-top:10px;"><span class="info-label">Headteacher's Remarks:</span> ${escapeHtml(headteacherRemarks)}</div>
+                    </div>
+                    
+                    <div class="signature-section">
+                        <div>
+                            <p>Class Teacher's Signature: ___________________</p>
+                            <p>Date: ___________</p>
+                        </div>
+                        <div>
+                            <p>Headteacher's Signature: ___________________</p>
+                            <p>Date: ___________</p>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; text-align: center; font-size: 10px; color: #64748b;">
+                        <p>Parent Portal - Generated on ${new Date().toLocaleDateString()}</p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('reportContainer').innerHTML = reportHtml;
+        }
+        
+        function getClassName(classLevel) {
+            const classes = {
+                'KG1': 'KG 1', 'KG2': 'KG 2',
+                'P1': 'Primary 1', 'P2': 'Primary 2', 'P3': 'Primary 3',
+                'P4': 'Primary 4', 'P5': 'Primary 5', 'P6': 'Primary 6',
+                'JHS1': 'JHS 1', 'JHS2': 'JHS 2', 'JHS3': 'JHS 3'
+            };
+            return classes[classLevel] || classLevel;
+        }
+        
+        function getPersonalDevTraits(classLevel) {
+            if (classLevel === 'KG1' || classLevel === 'KG2') {
+                return ['Leadership Ability', 'Basic Life Skills', 'Neatness', 'Sociability', 'Creativity & Initiative', 'Dependability', 'Recreation Work'];
+            } else if (classLevel === 'P1' || classLevel === 'P2' || classLevel === 'P3' ||
+                       classLevel === 'P4' || classLevel === 'P5' || classLevel === 'P6') {
+                return ['Leadership Ability', 'Basic Life Skills', 'Neatness', 'Sociability', 'Creativity & Initiative', 'Dependability', 'Recreation Work', 'Work Habits'];
+            } else {
+                return ['Basic Life Skills', 'Social Development Skills', 'Outdoor Activity', 'Work Habits'];
+            }
+        }
+        
+        function printReport() {
+            window.print();
+        }
+        
+        function logout() {
+            localStorage.removeItem('parentToken');
+            localStorage.removeItem('parent');
+            window.location.href = 'parent-login.html';
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+        
+        // Initialize
+        loadChildren();
+    </script>
+</body>
+</html>
