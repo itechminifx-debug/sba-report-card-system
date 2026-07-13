@@ -1,4 +1,4 @@
-node_modules/
-.env
-.DS_Store
-*.log
+node_modules/ > .gitignore
+.env >> .gitignore
+.DS_Store >> .gitignore
+.log >> .gitignore
