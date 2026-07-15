@@ -14,18 +14,68 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('frontend'));
 
-// Database connection
+// ==========================
+// ✅ FIXED: Resilient Database Connection
+// ==========================
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false },
+    max: 5, // Free tier connection limit
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+    statement_timeout: 10000,
+    query_timeout: 10000
 });
 
-// Test database connection
-pool.connect((err) => {
-    if (err) {
-        console.error('❌ Database connection error:', err.message);
-    } else {
-        console.log('✅ PostgreSQL (Neon) connected successfully');
+// Prevent app crash on connection errors
+pool.on('error', (err) => {
+    console.error('⚠️ Unexpected database error:', err.message);
+    // Do NOT throw – just log and continue
+});
+
+// Log successful connections
+pool.on('connect', () => {
+    console.log('✅ New database connection established');
+});
+
+// Test connection with retry logic
+async function connectWithRetry(retries = 3) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const client = await pool.connect();
+            console.log('✅ PostgreSQL (Neon) connected successfully');
+            client.release();
+            return;
+        } catch (err) {
+            console.log(`⏳ Connection attempt ${i + 1} failed. Retries left: ${retries - i - 1}`);
+            if (i === retries - 1) {
+                console.error('❌ Failed to connect to database:', err.message);
+                // Keep running – app will retry queries automatically
+            }
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+    }
+}
+
+// Run the connection test on startup
+connectWithRetry();
+
+// ============================================
+// ✅ NEW: Database Health Check Endpoint
+// ============================================
+app.get('/api/db-health', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT NOW()');
+        res.json({ 
+            status: 'ok', 
+            message: 'Database connected',
+            time: result.rows[0].now 
+        });
+    } catch (err) {
+        res.status(500).json({ 
+            status: 'error', 
+            message: err.message 
+        });
     }
 });
 
